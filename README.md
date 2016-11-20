@@ -1,9 +1,3 @@
----
-title: hexe
-date: 2016-11-20
-tags: dev
----
-
 # hexe
 
 `hexe` is a simple terminal-based hex editor.
@@ -30,7 +24,7 @@ tags: dev
 ## Key mapping
 
 | Key                                                       | Function                                 |
-| --                                                        | --                                       |
+| ---                                                       | ---                                      |
 | **General**                                               |                                          |
 | `<Esc>`, `q`                                              | quit                                     |
 | `<Ctrl-s>`, `w`                                           | save                                     |

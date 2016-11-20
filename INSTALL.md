@@ -1,9 +1,3 @@
----
-title: hexe-install
-date: 2016-11-20
-tags: tmp
----
-
 # Installation Guide
 
 `hexe` is implemented in Haskell. It contains a *Cabal* description.
