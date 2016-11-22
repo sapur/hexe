@@ -6,7 +6,6 @@ module Editor.Render (
 import Data.Char
 import Data.List.Extra
 import Data.Maybe
-import Data.Maybe
 import Data.Word
 import Text.Printf
 

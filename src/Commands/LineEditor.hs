@@ -31,7 +31,7 @@ commitInput = do
         Nothing  -> return ()  -- FIXME
         Just inp -> do
             setKeymap (inpNextKm inp)
-            (inpAction inp) (inpText inp)
+            inpAction inp (inpText inp)
             withEditor $ \ed
                 -> setCursor (edCursor ed)
                  $ ed{ edBuffer = Buf.removeSlack (edCursor ed) (edBuffer ed)
@@ -44,7 +44,7 @@ withInput f = withEditor $ \ed -> ed{ edPending = mod (edPending ed) }  where
 addInput ch = withInput $ \inp ->
     let txt = inpText inp
         cur = inpCursor inp
-    in  inp { inpText   = (take cur txt ++ [ch] ++ drop cur txt)
+    in  inp { inpText   = take cur txt ++ [ch] ++ drop cur txt
             , inpCursor = cur + 1
             }
 

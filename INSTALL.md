@@ -4,29 +4,44 @@
 
 ## Preparations
 
-Install the following tools:
+Install the following tools with your operating system's package manager:
 
- * `git`.
- * `ghc`, the *Glasgow Haskell Compiler*
- * `cabal-install`
+ * `git`
+ * `haskell-platform` ([link](https://www.haskell.org/downloads))
 
-`cabal-install` will download and compile all necessary files.
+If the Haskell platform is not available for your system, you may be able to 
+install the required packages individually, namely *Glasgow Haskell Compiler* (`ghc`) and either `stack` or `cabal-install`.
 
-## A: Compile without sandbox
+Then run:
 
     git clone https://github.com/sapur/hexe.git
+    cd hexe.git
+
+From here on, install `hexe` either via `stack`, or via `cabal-install`. Follow 
+either of the following sections.
+
+## A: Build with "stack"
+
+From the repository root run:
+
+    stack install
+
+The binary will be symlinked to `.local/bin/hexe`. Add `.local/bin` to your 
+`$PATH`.
+
+## B: Build with "cabal-install" without a sandbox
+
     cd hexe.git
     cabal install
 
 By default, the binary will be installed to `.cabal/bin/hexe`. Add `.cabal/bin` 
 to your `$PATH`.
 
-## B: Compile with sandbox
+## C: Build with "cabal-install" in a sandbox
 
 In case the requirements of this package conflict with any other Cabal packages 
 you might have installed, build this application in a sandbox:
 
-    git clone https://github.com/sapur/hexe.git
     cd hexe.git
     cabal sandbox init
     cabal install

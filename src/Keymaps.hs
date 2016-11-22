@@ -1,6 +1,5 @@
 module Keymaps where
 
-import Control.Monad
 import Data.Char
 import Text.Read
 
@@ -8,8 +7,6 @@ import Graphics.Vty hiding (update)
 
 import Editor
 import Commands
-
-import qualified Buffer as Buf
 
 
 navigation = keymap "Nav" brightBlack
@@ -150,11 +147,11 @@ inputKey inp key = case key of
     EvKey KHome  [] -> moveInput minBound
     EvKey KEnd   [] -> moveInput maxBound
 
-    EvKey (KChar c) [] | (inpCheck inp) c -> do
+    EvKey (KChar c) [] | inpCheck inp c -> do
         addInput c
         pending <- getsEditor edPending
         case pending of
-            Just inp | (inpAccept inp) (inpText inp)
+            Just inp | inpAccept inp (inpText inp)
                 -> commitInput
             _   -> return ()
 

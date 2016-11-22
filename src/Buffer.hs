@@ -234,7 +234,7 @@ checkChunks :: Chunks -> Bool
 checkChunks chunks = noNulls && merged  where
     chunksL = toList chunks
     noNulls = all ((> 0) . BS.length . chData) chunksL
-    merged  = not $ or $ zipWith mergeable chunksL (tail chunksL)  where
+    merged  = not $ or $ zipWith mergeable chunksL (tail chunksL)
 
 
 instance Show Chunk where

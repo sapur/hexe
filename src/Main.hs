@@ -2,9 +2,6 @@
 module Main where
 
 import Control.Monad
-import System.Environment
-import System.Exit
-import System.IO
 
 import Graphics.Vty hiding (update)
 
@@ -15,10 +12,17 @@ import Commands
 
 import qualified Buffer as Buf
 
+import Paths_hexe
+import Data.Version
+
 
 main = do
-    Options{..} <- parseOptions
+    opts <- parseOptions
+    case opts of
+        PrintVersion -> putStrLn (showVersion version)
+        Options{..}  -> run opts
 
+run Options{..} = do
     cfg <- standardIOConfig
     vty <- mkVty cfg
 
@@ -26,7 +30,7 @@ main = do
     ed0 <- mkEditor vty buf navigation
 
     CommandState ed1 _ <- (`execCommand` mkCommandState ed0) $ do
-        forM optMarks $ \mark -> do
+        forM_ optMarks $ \mark -> do
             cursorAbs mark
             setMark True
         cursorAbs optCursor
