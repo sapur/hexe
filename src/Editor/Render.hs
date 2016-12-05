@@ -12,11 +12,9 @@ import Text.Printf
 import           Graphics.Vty hiding (update, Style)
 import qualified Graphics.Vty as Vty
 
+import Editor.Data
 import Editor.Style
-import Editor.Types
 import Helpers
-import Input.Mode
-import Keymap.Data
 
 import           Buffer (ModState)
 import qualified Buffer as Buf
@@ -40,7 +38,7 @@ render ed = result  where
     chunks          = chunksOf cols bytes
     hexLines        = zipWith hexLine [0..] chunks
     hexLine line ch = renderLine (scrollOff + line * cols)
-                                 (edCursor ed) (istMode $ edInput ed)
+                                 (edCursor ed) (edMode ed)
                                  (edLineText ed) cols effColMul (edStyle ed) ch
 
     hexView    = vertCat hexLines
@@ -50,7 +48,7 @@ render ed = result  where
 
 renderLine
     :: Int -> Int -> InputMode -> String -> Int -> Int -> Style
-    -> [(Word8, ModState, Bool)]
+    -> [(Word8, ModState, Maybe String)]
     -> Image
 renderLine offset cursor mode pending perLine colMul sty bytes = horizCat
     [ string styOffset (printf "%08X  " offset)
@@ -90,7 +88,7 @@ styleByte cursor mode pending offset st mk sty b = style  where
     Style{..} = sty
     c         = chr (int b)
     baseStyle =
-        if   mk
+        if   isJust mk
         then styMark
         else case st of
                 Buf.Alt         -> styAlt
@@ -111,18 +109,42 @@ renderStatus ed = final  where
     wdt       = geoWidth (edGeo ed)
     pos       = (edCursor ed + 2) * 100 `div` (Buf.length (edBuffer ed) + 1)
     left      = string styOffset (printf "%08x  " (edCursor ed))
-            <|> let mode = istMode $ edInput ed
-                in  case () of
-                        _ | isInLine mode
-                          -> fromMaybe (edInfo ed) (edMessage ed)
-                        _ -> input (edLineCursor ed) (edLineText ed ++ " ")
-    input c s = string styInput (take c s)
-            <|> string (styInput `withStyle` reverseVideo) [s !! c]
-            <|> string styInput (drop (c+1) s ++ " ")
+            <|> statusCenter ed
     right     = string stySpace "  "
-            <|> kmName (istKeymap $ edInput ed)
+            <|> renderMode (edMode ed)
             <|> (if   Buf.isModified (edBuffer ed)
                  then string styAlt " * "
                  else string stySpace " ")
             <|> string styNotice (printf " %3d%%" pos)
     final     = resizeWidth (wdt - imageWidth right) left <|> right
+
+statusCenter ed = final  where
+    mode      = edMode ed
+    Style{..} = edStyle ed
+    chunk     = Buf.viewRange (edCursor ed) 1 (edBuffer ed)
+    hasLine   = not (isInLine mode)
+
+    input c s = string styInput (take c s)
+            <|> string (styInput `withStyle` reverseVideo) [s !! c]
+            <|> string styInput (drop (c+1) s ++ " ")
+    mark str  = string styMark "  "
+            <|> string styInput (" " ++ str)
+
+    final = case chunk of
+        _ | hasLine -> input (edLineCursor ed) (edLineText ed ++ " ")
+        _           -> fromMaybe tryMark (edMessage ed)
+    tryMark = case chunk of
+        [(_,_,Just str)] | not (null str) -> mark str
+        _                                 -> edInfo ed
+
+renderMode mode = case mode of
+    HexOverwrite   -> title brightBlack  "Hex "
+    HexOverwriting -> title brightYellow "Hex*"
+    CharOverwrite  -> title brightYellow "Char"
+    HexInsert      -> title brightRed    "Hex Ins "
+    HexInserting   -> title brightRed    "Hex Ins*"
+    CharInsert     -> title brightRed    "Char Ins"
+    OffsetInput    -> title white        "Offset"
+    MarkInput      -> title white        "Mark"
+  where
+    title color name = string (currentAttr `withForeColor` color) name

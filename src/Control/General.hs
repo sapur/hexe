@@ -1,7 +1,7 @@
 module Control.General (
     storeFile,
     safeQuit,
-    setKeymap, setKeymapByName, unhandledKey,
+    unhandledKey,
     message, showNotice, showInfo, showWarn,
     quit
 ) where
@@ -15,8 +15,8 @@ import Graphics.Vty hiding (update, Style)
 
 import Editor
 import Editor.Style
-import Keymap.Data
-import Keymap.Render
+import Helpers
+import Render
 
 import           Buffer (Buffer (..))
 import qualified Buffer as Buf
@@ -31,7 +31,7 @@ storeFile = gets cstEditor >>= \ed -> do
             return (buf', msgOK)
         didn'tWork err = do
             let _ = err :: IOException
-            return (buf, msgWarn ed $ "Dang! " ++ show err)
+            return (buf, msgWarn ed $ formatIOEx err)
     (buf', msg) <- lift (trySave `catch` didn'tWork)
     withEditor $ const ed{ edBuffer = buf' }
     message msg
@@ -43,16 +43,6 @@ safeQuit = do
         showWarn "Changes not saved, Ctrl+Q to force quit"
     else
         quit
-
-
-setKeymap km = withEditor $ \ed -> ed
-    { edInput = (edInput ed){ istKeymap = km }
-    }
-
-setKeymapByName kmName = withEditor $ \ed -> ed
-    { edInput = let km = lookupKeymap kmName (edKeymaps ed)
-                in  (edInput ed){ istKeymap = km }
-    }
 
 
 unhandledKey ev = showWarn $ case ev of

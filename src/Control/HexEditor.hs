@@ -1,7 +1,7 @@
 module Control.HexEditor (
     cursorAbs, cursorBuf, cursorRel, cursorPage, cursorLine,
     scroll, scrollCursor,
-    setColumnMul,
+    setColumnWdtAbs, setColumnWdtRel,
     overwriteHex, overwriteCharKey, deleteByte,
     prepareInsert,
     setMark, toggleMark, findMark,
@@ -18,9 +18,7 @@ import Graphics.Vty hiding (update, Style)
 import Editor
 import Editor.Style
 
-import           Buffer (Buffer (..))
-import qualified Buffer as Buf
-
+import qualified Buffer  as Buf
 import qualified History as Hist
 
 import Control.General
@@ -69,16 +67,18 @@ scrollCursor = withEditor $ \ed ->
     in  setCursor cursor ed{ edScroll = offset }
 
 
-setColumnMul d = do
+setColumnWdtAbs n = do
     msg <- withEditorSt mod
     showNotice msg
   where
-    mod ed = let mul0 = edColMul ed
-                 mul1 = mul0 + d
-                 mul2 = max 1 (min 128 mul1)
-                 msg  = printf "#columns is multiple of %d" mul2
-                 ed'  = relayout ed{ edColMul = mul2 }
+    mod ed = let mul = max 1 (min 128 n)
+                 msg  = printf "column width is %d" mul
+                 ed'  = relayout ed{ edColMul = mul }
              in  (msg, ed')
+
+setColumnWdtRel d = do
+    mul <- getsEditor edColMul
+    setColumnWdtAbs (mul + d)
 
 
 overwriteHex input = withUndo (withEditor int)  where
@@ -119,7 +119,8 @@ setMark b = withEditor $ \ed -> ed
 
 toggleMark = withEditor $ \ed ->
     let (buf, offset) = (edBuffer ed, edCursor ed)
-        mark          = not (Buf.getMark offset buf)
+        mark          = maybe (Just "") (const Nothing)
+                              (Buf.getMark offset buf)
     in  ed{ edBuffer = Buf.setMark offset mark buf
           }
 

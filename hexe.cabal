@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                hexe
-version:             0.10
+version:             0.12
 synopsis:            A TUI hex editor
 author:              Stephan-A. Posselt
 maintainer:          dev-hexe@nimbrium.net
@@ -16,21 +16,24 @@ executable hexe
   other-modules:       Buffer,
                        Command.Data,
                        Command.Execute,
+                       Command.Render,
                        Control.General,
                        Control.HexEditor,
                        Control.LineEditor,
                        Editor,
+                       Editor.Data,
+                       Editor.Mode,
                        Editor.Render,
                        Editor.Style,
-                       Editor.Types,
                        Helpers,
                        History,
-                       Input.Mode,
                        Keymap,
                        Keymap.Data,
                        Keymap.Default,
+                       Keymap.Render,
                        Main,
-                       Options
+                       Options,
+                       Render
   other-extensions:    MultiParamTypeClasses, RecordWildCards
   build-depends:       base >=4.9 && <4.10,
                        bytestring >=0.10 && <0.11,

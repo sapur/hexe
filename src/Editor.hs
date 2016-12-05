@@ -1,5 +1,5 @@
 module Editor (
-    module Editor.Types,
+    module Editor.Data,
     reshape, relayout,
     setCursor, setScroll,
     modifyEditor,
@@ -12,9 +12,9 @@ module Editor (
 
 import Graphics.Vty hiding (update)
 
+import Editor.Data
 import Editor.Render
 import Editor.Style
-import Editor.Types
 
 import qualified Buffer  as Buf
 import qualified History as Hist
@@ -58,7 +58,7 @@ clampScrollSoft ed = ed{ edScroll = new }  where
     new       = clamp lbound ubound (edScroll ed)
 
 clampCursorHard ed = ed{ edCursor = new }  where
-    ubound = (Buf.length $ edBuffer ed) - 1
+    ubound = Buf.length (edBuffer ed) - 1
     new    = clamp 0 ubound (edCursor ed)
 
 clampCursorSoft ed = ed{ edCursor = new }  where

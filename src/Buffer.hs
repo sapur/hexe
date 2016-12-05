@@ -13,6 +13,7 @@ module Buffer (
 import Prelude hiding (length, concatMap, all, and, or, readFile, writeFile)
 
 import Data.Foldable hiding (length)
+import Data.Maybe
 import Data.Monoid hiding (Alt)
 import Data.Word
 import Debug.Trace
@@ -36,7 +37,7 @@ type Chunks = FingerTree Index Chunk
 data Chunk = Chunk
     { chMod  :: ModState
     , chData :: ByteString
-    , chMark :: Bool
+    , chMark :: Maybe String
     }
 
 data ModState
@@ -59,7 +60,7 @@ instance Monoid Index where
     Index lA mA `mappend` Index lB mB = Index (lA+lB) (mA || mB)
 
 instance Measured Index Chunk where
-    measure ch = Index (BS.length $ chData ch) (chMark ch)
+    measure ch = Index (BS.length $ chData ch) (isJust $ chMark ch)
 
 
 mkBuffer path = Buffer
@@ -74,16 +75,16 @@ length = idxLength . FT.measure . bufChunks
 mkChunk mod bin = Chunk
     { chMod  = mod
     , chData = bin
-    , chMark = False
+    , chMark = Nothing
     }
 
 mergeable chunkA chunkB = and
     [ chMod chunkA == chMod chunkB
-    , not (chMark chunkA || chMark chunkB)
+    , not (isJust (chMark chunkA) || isJust (chMark chunkB))
     ]
 
 
-viewRange :: Offset -> Int -> Buffer -> [(Word8, ModState, Bool)]
+viewRange :: Offset -> Int -> Buffer -> [(Word8, ModState, Maybe String)]
 viewRange offset count buf = concatMap toBytes chunks  where
     (_,trimLeft) = splitChunksAt offset (bufChunks buf)
     (chunks,_)   = splitChunksAt count  trimLeft
@@ -142,7 +143,7 @@ getMark offset buf = result  where
     (before, at) = FT.split ((> offset) . idxLength) (bufChunks buf)
     result       = case FT.viewl at of
         (ch FT.:< _) -> chMark ch
-        _            -> False
+        _            -> Nothing
 
 findMark False offset buf = findMarkForward offset (bufChunks buf)
 findMark True  offset buf = result  where

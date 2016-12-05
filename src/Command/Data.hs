@@ -7,17 +7,17 @@ module Command.Data (
     InputMode (..)
 ) where
 
-import Input.Mode
+import Editor.Mode
 
 
 data Command
     = Quit Bool
-    | SetMode String InputMode
+    | SetMode InputMode
     | Store
     | JumpHistory Direction
     | SetCursor (PUnit PValue)
     | SetScroll (PUnit PValue)
-    | SetColumnMul PValue
+    | SetColumnWdt PValue
     | Set256Colors Switch
     | SetMark Switch
     | JumpMark Direction

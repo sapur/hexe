@@ -20,9 +20,14 @@
 
 `hexe` is always invoked on a single file:
 
-    hexe --help
     hexe <filename>
 
 The following command will print a table of all keys and functions:
 
     hexe --list-bindings
+
+To bookmark locations from the command line, call `hexe` like this:
+
+    hexe -M 0=entry -M 446=part1 -M 462=part2 -M 478=part3 -M 494=part4 -M 510=magic sector.bin
+
+Refer to `hexe --help` for a list of all options.

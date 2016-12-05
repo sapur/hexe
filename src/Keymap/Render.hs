@@ -17,6 +17,7 @@ import Graphics.Vty hiding (update, Style)
 
 import Command.Render
 import Keymap.Data
+import Render
 
 
 renderKeymapByMode kms = renderTable table  where
@@ -56,28 +57,11 @@ renderTable table = sections  where
 
 
 keymapTable :: Keymaps -> [(String, [(String, (String, String))])]
-keymapTable kms = map (second showKm) $ M.toList kms  where
-    showKm   km = bindings $ kmHandler km
-    bindings m  = map (first showEvent >>> second renderCommand) $ M.toList m
+keymapTable kms = map (first showKeymapName >>> second showKm) $ M.toList kms
+  where
+    showKm km = map (first showEvent >>> second renderCommand)
+              $ M.toList km
 
 showEvent ev = case ev of
     EvKey key mods -> showKey key mods
     _              -> show ev
-
-showKey key mods = repr  where
-    repr     = if   null mods
-               then printf "%s"    strKey :: String
-               else printf "%s-%s" (map strMod mods) strKey
-    strKey   = case key of
-        KChar c -> strChar c
-        _       -> tail $ show key
-    strChar c = case c of
-        '\t' -> "Tab"
-        ' '  -> "Space"
-        _    -> let s = show c
-                in  take (length s - 2) $ drop 1 s
-    strMod m = case m of
-        MShift -> 'S'
-        MCtrl  -> 'C'
-        MMeta  -> 'M'
-        MAlt   -> 'A'

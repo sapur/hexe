@@ -5,9 +5,11 @@ module Command.Render (
 import Text.Printf
 
 import Command.Data
+import Editor.Mode
 
 
 catGen  = "General"
+catMode = "Mode Switching"
 catNav  = "Navigation"
 catView = "Change View"
 catEdit = "Editing"
@@ -19,14 +21,14 @@ renderCommand cmd = case cmd of
     Quit b           -> catGen ? if b
         then "quit (without confirmation)"
         else "quit"
-    SetMode kmName _ -> catGen ? printf "switch to '%s' mode" kmName
+    SetMode mode     -> catMode? printf "switch to %s mode" (showMode mode)
     Store            -> catGen ? "save the file"
     JumpHistory dir  -> catEdit? case dir of
         Bw -> "undo"
         Fw -> "redo"
     SetCursor pos    -> catNav ? printf "move cursor %s" (renderPUnit pos)
     SetScroll pos    -> catNav ? printf "scroll %s" (renderPUnit pos)
-    SetColumnMul pos -> catView? printf "set column multiple %s"
+    SetColumnWdt pos -> catView? printf "set column width %s"
                                         (renderPValue pos)
     Set256Colors sw  -> catView? printf "%s 256 color mode" (renderSwitch sw)
     SetMark sw       -> catNav ? printf "%s mark at cursor" (renderSwitch sw)

@@ -1,8 +1,8 @@
-module Editor.Types (
+module Editor.Data (
+    module Editor.Mode,
     Editor (..), mkEditor, cstEditorE, cstExitE, 
     Geometry (..), mkGeometry,
     Checkpoint (..),
-    Keymap (..),
     EditorT,
     EditorState (..), mkEditorState,
     History,
@@ -15,6 +15,7 @@ import Control.Monad.Trans.State.Lazy
 import Graphics.Vty hiding (Style)
 
 import Buffer (Buffer (..), Offset)
+import Editor.Mode
 import Editor.Style
 import Helpers
 import History
@@ -32,8 +33,8 @@ data Editor = Editor
     , edColMul     :: Int
     , edInfo       :: Image
     , edMessage    :: Maybe Image
-    , edInput      :: InputState
-    , edLastInput  :: InputState
+    , edMode       :: InputMode
+    , edLastMode   :: InputMode
     , edLineText   :: String
     , edLineCursor :: Int
     , edKeymaps    :: Keymaps
@@ -61,7 +62,7 @@ data EditorState = EditorState
     }
 
 
-mkEditor vty buf mode km kms = do
+mkEditor vty buf kms = do
     (wdt,hgt) <- displayBounds $ outputIface vty
     return Editor
         { edVty        = vty
@@ -74,8 +75,8 @@ mkEditor vty buf mode km kms = do
         , edColMul     = 1
         , edInfo       = string currentAttr "No info."
         , edMessage    = Just (string currentAttr "Hi.")
-        , edInput      = mkInputState km mode
-        , edLastInput  = mkInputState km mode
+        , edMode       = HexOverwrite
+        , edLastMode   = HexOverwrite
         , edLineText   = ""
         , edLineCursor = 0
         , edKeymaps    = kms

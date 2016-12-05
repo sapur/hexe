@@ -1,9 +1,10 @@
 module Keymap.Data (
-    InputState (..), mkInputState,
-    Keymap (..),
     Keymaps,
-    emptyKeymap, mkKeymap,
+    Keymap, mkKeymap,
+    KeymapName (..),
+    emptyKeymap,
     lookupKeymap,
+    showKeymapName,
 ) where
 
 import Data.Maybe
@@ -16,33 +17,31 @@ import Graphics.Vty hiding (Style)
 import Command.Data
 
 
-data InputState = InputState
-    { istKeymap :: Keymap
-    , istMode   :: InputMode
-    }
+type Keymaps = Map KeymapName Keymap
+type Keymap  = Map Event Command
 
-data Keymap = Keymap
-    { kmName    :: Image
-    , kmHandler :: Map Event Command
-    , kmForward :: Maybe Keymap
-    }
+data KeymapName
+    = HexNavKeys
+    | LineNavKeys
+    | HexOverKeys
+    | CharOverKeys
+    | HexInsKeys
+    | CharInsKeys
+    deriving (Eq, Ord, Show)
 
-type Keymaps = Map String Keymap
 
+mkKeymap binds = M.fromList binds :: Keymap
 
-mkInputState = InputState
-
-emptyKeymap = Keymap
-    { kmName    = string (currentAttr `withForeColor` brightRed) "PANIC"
-    , kmHandler = M.fromList $ map (\key -> (EvKey key [], Quit True))
-                                   [KChar 'q', KEsc]
-    , kmForward = Nothing
-    }
-
-mkKeymap name color forward mapping = Keymap
-    { kmName    = string (currentAttr `withForeColor` color) name
-    , kmHandler = M.fromList mapping
-    , kmForward = forward
-    }
+emptyKeymap = M.fromList $ map (\key -> (EvKey key [], Quit True))
+                               [KChar 'q', KEsc]
 
 lookupKeymap name kms = fromMaybe emptyKeymap $ M.lookup name kms
+
+
+showKeymapName name = case name of
+    HexNavKeys   -> "Hex Navigation"
+    LineNavKeys  -> "Line Navigation"
+    HexOverKeys  -> "Hex Overwrite"
+    CharOverKeys -> "Char Overwrite"
+    HexInsKeys   -> "Hex Insert"
+    CharInsKeys  -> "Char Insert"
