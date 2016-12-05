@@ -1,7 +1,7 @@
-module Commands.General (
+module Control.General (
     storeFile,
     safeQuit,
-    setKeymap, forwardKeymap, unhandledKey,
+    setKeymap, setKeymapByName, unhandledKey,
     message, showNotice, showInfo, showWarn,
     quit
 ) where
@@ -9,13 +9,14 @@ module Commands.General (
 import Control.Exception
 import Control.Monad.Trans
 import Control.Monad.Trans.State.Lazy
-import Data.Char
 import Text.Printf
 
 import Graphics.Vty hiding (update, Style)
 
 import Editor
 import Editor.Style
+import Keymap.Data
+import Keymap.Render
 
 import           Buffer (Buffer (..))
 import qualified Buffer as Buf
@@ -23,9 +24,7 @@ import qualified Buffer as Buf
 
 storeFile = gets cstEditor >>= \ed -> do
     let buf   = edBuffer ed
-        fnImg = horizCat
-              $ map (renderByte (-1) Nothing (edStyle ed) 0 . (\b->(ord b,Buf.Copy,False)))
-                    (bufPath buf)
+        fnImg = renderString (edStyle ed) (bufPath buf)
         msgOK = horizCat [ msgNotice ed "Saved ", fnImg , msgNotice ed "."]
     let trySave = do
             buf' <- Buf.writeFile buf
@@ -46,28 +45,19 @@ safeQuit = do
         quit
 
 
-setKeymap km = withEditor $ \ed -> ed{ edKeymap = km }
+setKeymap km = withEditor $ \ed -> ed
+    { edInput = (edInput ed){ istKeymap = km }
+    }
 
-forwardKeymap km key = do
-    setKeymap km
-    kmHandler km key
+setKeymapByName kmName = withEditor $ \ed -> ed
+    { edInput = let km = lookupKeymap kmName (edKeymaps ed)
+                in  (edInput ed){ istKeymap = km }
+    }
+
 
 unhandledKey ev = showWarn $ case ev of
-    EvKey key mods -> printf "Key not bound: %s" (showKey key mods)
+    EvKey key mods -> printf "Key not bound: <%s>" (showKey key mods)
     _              -> printf "Unknown event: %s" (show ev)
-
-showKey key mods = repr  where
-    repr     = if   null mods
-               then printf "<%s>"    strKey :: String
-               else printf "<%s-%s>" (map strMod mods) strKey
-    strKey   = case key of
-        KChar c -> [c]
-        _       -> show key
-    strMod m = case m of
-        MShift -> 'S'
-        MCtrl  -> 'C'
-        MMeta  -> 'M'
-        MAlt   -> 'A'
 
 showInfo   = styMessage styInfo
 showNotice = styMessage styNotice
@@ -79,5 +69,5 @@ styMessage styAttr msg = withEditor $ \ed ->
 
 message msg = withEditor $ setMessage msg
 
-quit :: Command ()
+quit :: EditorT IO ()
 quit = modify $ cstExitE (const True)

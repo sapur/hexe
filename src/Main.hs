@@ -5,21 +5,29 @@ import Control.Monad
 
 import Graphics.Vty hiding (update)
 
-import Options
+import Control.HexEditor
+import Control.LineEditor
 import Editor
-import Keymaps
-import Commands
+import Keymap
+import Keymap.Default
+import Keymap.Render
+import Options
 
 import qualified Buffer as Buf
 
-import Paths_hexe
+import Keymap.Data
+import Input.Mode
+
 import Data.Version
+import Paths_hexe
 
 
 main = do
     opts <- parseOptions
     case opts of
         PrintVersion -> putStrLn (showVersion version)
+        ListKeymap   -> putStr $ renderKeymapByMode     defaultKeymaps
+        ListBindings -> putStr $ renderKeymapByCategory defaultKeymaps
         Options{..}  -> run opts
 
 run Options{..} = do
@@ -27,9 +35,10 @@ run Options{..} = do
     vty <- mkVty cfg
 
     buf <- Buf.readFile optFilename
-    ed0 <- mkEditor vty buf navigation
+    ed0 <- mkEditor vty buf HexOverwrite hexOverwrite defaultKeymaps
 
-    CommandState ed1 _ <- (`execCommand` mkCommandState ed0) $ do
+    EditorState ed1 _ <- (`execCommand` mkEditorState ed0) $ do
+        setInput "Hex Overwrite" HexOverwrite
         forM_ optMarks $ \mark -> do
             cursorAbs mark
             setMark True
@@ -51,6 +60,7 @@ mainLoop ed0 = do
         EvResize wdt hgt ->
             mainLoop (reshape wdt hgt ed1)
         ev -> do
-            CommandState ed2 bQuit <- handleKey ev ed1
+            let cmd = lookupCommand ev $ istKeymap $ edInput ed1
+            EditorState ed2 bQuit <- execCommand cmd (mkEditorState ed1)
             let ed3 = updateInfo ed2
             unless bQuit (mainLoop ed3)

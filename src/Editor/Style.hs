@@ -1,7 +1,11 @@
 module Editor.Style (
     Style (..),
-    color16, color256
+    color16, color256,
+    renderString,
+    subst
 ) where
+
+import Data.Char
 
 import Graphics.Vty hiding (Style)
 
@@ -73,3 +77,18 @@ color256 = style  where
 
 
 clearStyle attr = attr{ attrStyle = SetTo defaultStyleMask }
+
+
+renderString sty = horizCat . map render  where
+    render ch = let style = if isPrint ch then styPrint else styNonPrint
+                in  char (style sty) ch
+
+
+subst c = case c of
+    '\NUL' -> '.'
+    '\ESC' -> '@'
+    '\r'   -> 'R'
+    '\n'   -> '/'
+    '\t'   -> '>'
+    '\b'   -> '<'
+    _      -> '+'

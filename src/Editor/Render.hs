@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 module Editor.Render (
-    renderView, renderByte
+    renderView
 ) where
 
 import Data.Char
@@ -12,9 +12,11 @@ import Text.Printf
 import           Graphics.Vty hiding (update, Style)
 import qualified Graphics.Vty as Vty
 
-import Helpers
-import Editor.Types
 import Editor.Style
+import Editor.Types
+import Helpers
+import Input.Mode
+import Keymap.Data
 
 import           Buffer (ModState)
 import qualified Buffer as Buf
@@ -38,8 +40,8 @@ render ed = result  where
     chunks          = chunksOf cols bytes
     hexLines        = zipWith hexLine [0..] chunks
     hexLine line ch = renderLine (scrollOff + line * cols)
-                                 (edCursor ed) (edPending ed)
-                                 cols effColMul (edStyle ed) ch
+                                 (edCursor ed) (istMode $ edInput ed)
+                                 (edLineText ed) cols effColMul (edStyle ed) ch
 
     hexView    = vertCat hexLines
     statusView = renderStatus ed
@@ -47,28 +49,29 @@ render ed = result  where
     result     = hexView <-> statusView
 
 renderLine
-    :: Int -> Int -> Maybe InputEditor -> Int -> Int -> Style
+    :: Int -> Int -> InputMode -> String -> Int -> Int -> Style
     -> [(Word8, ModState, Bool)]
     -> Image
-renderLine offset cursor pending perLine colMul sty bytes = horizCat
+renderLine offset cursor mode pending perLine colMul sty bytes = horizCat
     [ string styOffset (printf "%08X  " offset)
-    , horizCat $ zipWith (renderHex cursor pending colMul sty) [offset..] bytes
+    , horizCat $ zipWith (renderHex cursor mode pending colMul sty)
+                         [offset..] bytes
     , string stySpace (replicate (3*padding) ' ')
     , string stySpace " "
-    , horizCat $ zipWith (renderByte cursor pending sty) [offset..] bytes
+    , horizCat $ zipWith (renderByte cursor mode pending sty) [offset..] bytes
     , string stySpace (replicate padding ' ')
     ]
   where
     Style{..} = sty
     padding   = perLine - length bytes
 
-renderHex cursor pending colMul sty offset (b,st,mk)
+renderHex cursor mode pending colMul sty offset (b,st,mk)
     = let Style{..} = sty
-          str       = case (cursor == offset, pending) of
-              (True, Just inp@InputEditor{ inpImm = True })
-                -> printf "%-2s" (inpText inp)
+          str       = case cursor == offset of
+              True | isInLine mode && not (null pending)
+                -> printf "%-2s" pending
               _ -> hexByte b
-      in  string (styleByte cursor pending offset st mk sty b) str
+      in  string (styleByte cursor mode pending offset st mk sty b) str
       <|> if   offset `mod` colMul /= colMul-1
           then char stySpace ' '
           else string stySpace "  "
@@ -78,21 +81,12 @@ hexByte b = [toDigit ms, toDigit ls]  where
     toDigit n | n < 10 = chr (int n      + ord '0')
     toDigit n          = chr (int n - 10 + ord 'A')
 
-renderByte cursor pending sty offset (b,st,mk) =
+renderByte cursor mode pending sty offset (b,st,mk) =
     let c = chr (int b)
-    in  char (styleByte cursor pending offset st mk sty b)
+    in  char (styleByte cursor mode pending offset st mk sty b)
              (if isPrint c then c else subst c)
-  where
-    subst c = case c of
-        '\NUL' -> '.'
-        '\ESC' -> '@'
-        '\r'   -> 'R'
-        '\n'   -> '/'
-        '\t'   -> '>'
-        '\b'   -> '<'
-        _      -> '+'
 
-styleByte cursor pending offset st mk sty b = style  where
+styleByte cursor mode pending offset st mk sty b = style  where
     Style{..} = sty
     c         = chr (int b)
     baseStyle =
@@ -105,9 +99,9 @@ styleByte cursor pending offset st mk sty b = style  where
                 _ | c == '\NUL' -> styNull
                 _ | isPrint c   -> styPrint
                 _               -> styNonPrint
-    isImm = case pending of
-        Just inp | inpImm inp -> True
-        _                     -> False
+    isImm = case () of
+        _ | isInLine mode && not (null pending) -> True
+        _                                       -> False
     style | cursor-offset /= 0 = baseStyle
           | isImm              = baseStyle   `withStyle` reverseVideo
           | otherwise          = styChanging `withStyle` reverseVideo
@@ -117,15 +111,16 @@ renderStatus ed = final  where
     wdt       = geoWidth (edGeo ed)
     pos       = (edCursor ed + 2) * 100 `div` (Buf.length (edBuffer ed) + 1)
     left      = string styOffset (printf "%08x  " (edCursor ed))
-            <|> case edPending ed of
-                    Just inp@InputEditor{ inpImm = False }
-                      -> input (inpCursor inp) (inpText inp ++ " ")
-                    _ -> fromMaybe (edInfo ed) (edMessage ed)
+            <|> let mode = istMode $ edInput ed
+                in  case () of
+                        _ | isInLine mode
+                          -> fromMaybe (edInfo ed) (edMessage ed)
+                        _ -> input (edLineCursor ed) (edLineText ed ++ " ")
     input c s = string styInput (take c s)
             <|> string (styInput `withStyle` reverseVideo) [s !! c]
             <|> string styInput (drop (c+1) s ++ " ")
     right     = string stySpace "  "
-            <|> kmName (edKeymap ed)
+            <|> kmName (istKeymap $ edInput ed)
             <|> (if   Buf.isModified (edBuffer ed)
                  then string styAlt " * "
                  else string stySpace " ")

@@ -1,11 +1,10 @@
 module Editor.Types (
     Editor (..), mkEditor, cstEditorE, cstExitE, 
     Geometry (..), mkGeometry,
-    InputEditor (..), mkInputEditor,
     Checkpoint (..),
     Keymap (..),
-    Command,
-    CommandState (..), mkCommandState,
+    EditorT,
+    EditorState (..), mkEditorState,
     History,
     getCheckpoint, setCheckpoint,
     execCommand, getsEditor, withEditor, withEditorSt
@@ -15,25 +14,29 @@ import Control.Monad.Trans.State.Lazy
 
 import Graphics.Vty hiding (Style)
 
-import Helpers
-import History
 import Buffer (Buffer (..), Offset)
 import Editor.Style
+import Helpers
+import History
+import Keymap.Data
 
 
 data Editor = Editor
-    { edVty     :: Vty
-    , edStyle   :: Style
-    , edBuffer  :: Buffer
-    , edHistory :: History Checkpoint
-    , edPending :: Maybe InputEditor
-    , edScroll  :: Offset
-    , edCursor  :: Offset
-    , edGeo     :: Geometry
-    , edColMul  :: Int
-    , edInfo    :: Image
-    , edKeymap  :: Keymap
-    , edMessage :: Maybe Image
+    { edVty        :: Vty
+    , edStyle      :: Style
+    , edBuffer     :: Buffer
+    , edHistory    :: History Checkpoint
+    , edScroll     :: Offset
+    , edCursor     :: Offset
+    , edGeo        :: Geometry
+    , edColMul     :: Int
+    , edInfo       :: Image
+    , edMessage    :: Maybe Image
+    , edInput      :: InputState
+    , edLastInput  :: InputState
+    , edLineText   :: String
+    , edLineCursor :: Int
+    , edKeymaps    :: Keymaps
     }
 
 data Geometry = Geo
@@ -44,50 +47,38 @@ data Geometry = Geo
     , geoCells  :: Int
     }
 
-data InputEditor = InputEditor
-    { inpText   :: String
-    , inpCursor :: Int
-    , inpCheck  :: Char   -> Bool
-    , inpAccept :: String -> Bool
-    , inpImm    :: Bool
-    , inpNextKm :: Keymap
-    , inpAction :: String -> Command ()
-    }
-
 data Checkpoint = Checkpoint
     { ckpBuffer :: Buffer
     , ckpCursor :: Offset
     , ckpScroll :: Offset
     }
 
-data Keymap = Keymap
-    { kmName    :: Image
-    , kmHandler :: Event -> Command ()
-    }
+type EditorT m = StateT EditorState m
 
-type Command a = StateT CommandState IO a
-
-data CommandState = CommandState
+data EditorState = EditorState
     { cstEditor :: Editor
     , cstExit   :: Bool
     }
 
 
-mkEditor vty buf km = do
+mkEditor vty buf mode km kms = do
     (wdt,hgt) <- displayBounds $ outputIface vty
     return Editor
-        { edVty     = vty
-        , edStyle   = color256
-        , edBuffer  = buf
-        , edHistory = emptyHistory
-        , edPending = Nothing
-        , edScroll  = 0
-        , edCursor  = 0
-        , edGeo     = mkGeometry wdt hgt 1
-        , edColMul  = 1
-        , edInfo    = string currentAttr "No info."
-        , edKeymap  = km
-        , edMessage = Just (string currentAttr "Hi.")
+        { edVty        = vty
+        , edStyle      = color256
+        , edBuffer     = buf
+        , edHistory    = emptyHistory
+        , edScroll     = 0
+        , edCursor     = 0
+        , edGeo        = mkGeometry wdt hgt 1
+        , edColMul     = 1
+        , edInfo       = string currentAttr "No info."
+        , edMessage    = Just (string currentAttr "Hi.")
+        , edInput      = mkInputState km mode
+        , edLastInput  = mkInputState km mode
+        , edLineText   = ""
+        , edLineCursor = 0
+        , edKeymaps    = kms
         }
 
 mkGeometry wdt hgt colMul = geo  where
@@ -96,24 +87,14 @@ mkGeometry wdt hgt colMul = geo  where
         , geoHeight = hgt
         , geoCols   =
             let unlimCols = (int wdt-11) `div` 4
-                maxCols   = floor $ (int wdt-11) / (4 + 1/int colMul)
+                maxCols   = floor $ (int wdt-11 :: Double) / (4 + 1/int colMul)
                 reqCols   = (maxCols `div` colMul) * colMul
             in  if colMul >= 2 && reqCols > 0 then reqCols else unlimCols
         , geoRows   = hgt-1
         , geoCells  = geoRows geo * geoCols geo
         }
 
-mkInputEditor check accept imm nextKm action = InputEditor
-    { inpText   = ""
-    , inpCursor = 0
-    , inpCheck  = check
-    , inpAccept = accept
-    , inpImm    = imm
-    , inpNextKm = nextKm
-    , inpAction = action
-    }
-
-mkCommandState ed = CommandState ed False
+mkEditorState ed = EditorState ed False
 
 
 getCheckpoint ed = Checkpoint
@@ -129,7 +110,7 @@ setCheckpoint ckp ed = ed
     }
 
 
-execCommand :: Command a -> CommandState -> IO CommandState
+execCommand :: EditorT IO a -> EditorState -> IO EditorState
 execCommand = execStateT
 
 cstEditorE f cst = cst{ cstEditor = f (cstEditor cst) }
@@ -137,10 +118,10 @@ cstExitE   f cst = cst{ cstExit   = f (cstExit   cst) }
 
 getsEditor f = gets (f . cstEditor)
 
-withEditor :: (Editor -> Editor) -> Command ()
+withEditor :: (Editor -> Editor) -> EditorT IO ()
 withEditor = modify . cstEditorE
 
-withEditorSt :: (Editor -> (a, Editor)) -> Command a
+withEditorSt :: (Editor -> (a, Editor)) -> EditorT IO a
 withEditorSt f = state $ \cst ->
     let (a, ed') = f (cstEditor cst)
     in  (a, cst{ cstEditor = ed' })

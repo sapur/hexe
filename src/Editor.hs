@@ -6,16 +6,15 @@ module Editor (
     histCheckpoint, histUndo, histRedo,
     clearMessage, setMessage,
     updateInfo,
-    keymap, handleKey,
-    renderView, renderByte,
+    renderView,
     msgNotice, msgWarn
 ) where
 
 import Graphics.Vty hiding (update)
 
-import Editor.Types
-import Editor.Style
 import Editor.Render
+import Editor.Style
+import Editor.Types
 
 import qualified Buffer  as Buf
 import qualified History as Hist
@@ -99,17 +98,6 @@ setMessage msg ed = ed{ edMessage = Just msg }
 updateInfo ed = ed{ edInfo = styled info }  where
     styled = string (styInfo $ edStyle ed)
     info   = "Happy."
-
-
-keymap :: String -> Color -> (Event -> Command ()) -> Keymap
-keymap name color handler = Keymap
-    { kmName    = string (currentAttr `withForeColor` color) name
-    , kmHandler = handler
-    }
-
-handleKey key ed =
-    let handle = kmHandler (edKeymap ed)
-    in  execCommand (handle key) (mkCommandState ed)
 
 
 msgNotice ed = string (styNotice $ edStyle ed)

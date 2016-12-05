@@ -6,12 +6,14 @@ module Options (
 import Options.Applicative
 import Text.Printf
 
-import Paths_hexe
 import Data.Version
+import Paths_hexe
 
 
 data Options
     = PrintVersion
+    | ListKeymap
+    | ListBindings
     | Options
         { optFilename :: String
         , optCursor   :: Int
@@ -28,6 +30,10 @@ parseOptions = execParser
 options
     = flag' PrintVersion ( long "version" <> hidden
               <> help "Print version number.")
+  <|> flag' ListKeymap ( long "list-keymap" <> hidden
+              <> help "List key bindings by input mode.")
+  <|> flag' ListBindings ( long "list-bindings" <> hidden
+              <> help "List key bindings by category.")
   <|> Options
         <$> strArgument ( metavar "FILE" <> action "file"
               <> help "File to open. Need not exist.")

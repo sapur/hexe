@@ -1,4 +1,4 @@
-module Commands.HexEditor (
+module Control.HexEditor (
     cursorAbs, cursorBuf, cursorRel, cursorPage, cursorLine,
     scroll, scrollCursor,
     setColumnMul,
@@ -23,7 +23,7 @@ import qualified Buffer as Buf
 
 import qualified History as Hist
 
-import Commands.General
+import Control.General
 
 
 cursorAbs offset = withEditor $ setCursor offset
@@ -55,7 +55,7 @@ setCursorInLine x ed = setCursor offset ed  where
     offset = round (flushL + x * fromIntegral (cols-1))
 
 
-scroll :: Float -> Int -> Command ()
+scroll :: Float -> Int -> EditorT IO ()
 scroll pages rows = withEditor $ \ed ->
     let geo    = edGeo ed
         offset = edScroll ed
