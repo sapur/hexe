@@ -1,5 +1,5 @@
 module Keymap (
-    lookupCommand,
+    lookupScript,
 ) where
 
 import qualified Data.Map as M
@@ -12,14 +12,16 @@ import Editor.Mode
 import Keymap.Data
 
 
-lookupCommand ev mode kms = lookupKey ev mode $ selectKeymaps mode kms
+lookupScript ev mode kms
+    = lookupKey ev mode
+    $ selectKeymaps mode kms
 
 lookupKey ev _    []       = unhandledKey ev
 lookupKey ev mode (km:kms) = case M.lookup ev (km :: Keymap) of
     Nothing  -> case ev of
         EvKey (KChar ch) [] | validChar mode ch -> feedInput ch
         _                                       -> lookupKey ev mode kms
-    Just cmd -> execute cmd
+    Just cmd -> executeScript cmd
 
 selectKeymaps :: InputMode -> Keymaps -> [Keymap]
 selectKeymaps mode kms

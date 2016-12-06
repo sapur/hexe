@@ -18,7 +18,7 @@ import Command.Data
 
 
 type Keymaps = Map KeymapName Keymap
-type Keymap  = Map Event Command
+type Keymap  = Map Event Script
 
 data KeymapName
     = HexNavKeys
@@ -32,7 +32,7 @@ data KeymapName
 
 mkKeymap binds = M.fromList binds :: Keymap
 
-emptyKeymap = M.fromList $ map (\key -> (EvKey key [], Quit True))
+emptyKeymap = M.fromList $ map (\key -> (EvKey key [], [Quit True]))
                                [KChar 'q', KEsc]
 
 lookupKeymap name kms = fromMaybe emptyKeymap $ M.lookup name kms

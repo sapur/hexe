@@ -1,4 +1,5 @@
 module Command.Data (
+    Script,
     Command (..),
     PValue (..),
     PUnit (..),
@@ -10,8 +11,11 @@ module Command.Data (
 import Editor.Mode
 
 
+type Script = [Command]
+
 data Command
     = Quit Bool
+    | Refresh
     | SetMode InputMode
     | Store
     | JumpHistory Direction

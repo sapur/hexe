@@ -59,7 +59,7 @@ renderTable table = sections  where
 keymapTable :: Keymaps -> [(String, [(String, (String, String))])]
 keymapTable kms = map (first showKeymapName >>> second showKm) $ M.toList kms
   where
-    showKm km = map (first showEvent >>> second renderCommand)
+    showKm km = map (first showEvent >>> second renderScript)
               $ M.toList km
 
 showEvent ev = case ev of

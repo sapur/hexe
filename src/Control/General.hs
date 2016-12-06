@@ -3,6 +3,7 @@ module Control.General (
     safeQuit,
     unhandledKey,
     message, showNotice, showInfo, showWarn,
+    refreshScreen,
     quit
 ) where
 
@@ -58,6 +59,8 @@ styMessage styAttr msg = withEditor $ \ed ->
     in  setMessage (string attr msg) ed
 
 message msg = withEditor $ setMessage msg
+
+refreshScreen = getsEditor edVty >>= lift . refresh
 
 quit :: EditorT IO ()
 quit = modify $ cstExitE (const True)

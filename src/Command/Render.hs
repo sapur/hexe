@@ -1,7 +1,10 @@
 module Command.Render (
-    renderCommand
+    renderScript,
+    renderCommand,
 ) where
 
+import Control.Arrow
+import Data.List
 import Text.Printf
 
 import Command.Data
@@ -16,11 +19,18 @@ catEdit = "Editing"
 catEx   = "Ex Mode"
 
 
+renderScript :: Script -> (String, String)
+renderScript
+    = (first head >>> second (intercalate ", "))
+    . unzip
+    . map renderCommand
+
 renderCommand cmd = case cmd of
 
     Quit b           -> catGen ? if b
         then "quit (without confirmation)"
         else "quit"
+    Refresh          -> catGen ? "refresh screen"
     SetMode mode     -> catMode? printf "switch to %s mode" (showMode mode)
     Store            -> catGen ? "save the file"
     JumpHistory dir  -> catEdit? case dir of

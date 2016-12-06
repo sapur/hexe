@@ -4,7 +4,7 @@ module Keymap.Default (
 
 import qualified Data.Map as M
 
-import Graphics.Vty hiding (update)
+import Graphics.Vty hiding (update, char)
 
 import Command.Execute
 import Keymap.Data
@@ -20,95 +20,107 @@ defaultKeymaps = M.fromList
     ]
 
 hexNav = mkKeymap
-    [ (EvKey KLeft        []     , SetCursor $ Char $ Rel (-1))
-    , (EvKey KRight       []     , SetCursor $ Char $ Rel 1)
-    , (EvKey KUp          []     , SetCursor $ Line $ Rel (-1))
-    , (EvKey KDown        []     , SetCursor $ Line $ Rel 1)
-    , (EvKey (KChar 'h')  []     , SetCursor $ Char $ Rel (-1))
-    , (EvKey (KChar 'l')  []     , SetCursor $ Char $ Rel 1)
-    , (EvKey (KChar 'k')  []     , SetCursor $ Line $ Rel (-1))
-    , (EvKey (KChar 'j')  []     , SetCursor $ Line $ Rel 1)
+    [ key   KLeft     ~> [SetCursor $ Char $ Rel (-1)]
+    , key   KRight    ~> [SetCursor $ Char $ Rel 1]
+    , key   KUp       ~> [SetCursor $ Line $ Rel (-1)]
+    , key   KDown     ~> [SetCursor $ Line $ Rel 1]
+    , char  'h'       ~> [SetCursor $ Char $ Rel (-1)]
+    , char  'l'       ~> [SetCursor $ Char $ Rel 1]
+    , char  'k'       ~> [SetCursor $ Line $ Rel (-1)]
+    , char  'j'       ~> [SetCursor $ Line $ Rel 1]
 
-    , (EvKey KHome        []     , SetCursor $ Line $ Frac 0)
-    , (EvKey KEnd         []     , SetCursor $ Line $ Frac 1)
-    , (EvKey (KChar '^')  []     , SetCursor $ Line $ Frac 0)
-    , (EvKey (KChar '$')  []     , SetCursor $ Line $ Frac 1)
+    , key   KHome     ~> [SetCursor $ Line $ Frac 0]
+    , key   KEnd      ~> [SetCursor $ Line $ Frac 1]
+    , char  '^'       ~> [SetCursor $ Line $ Frac 0]
+    , char  '$'       ~> [SetCursor $ Line $ Frac 1]
 
-    , (EvKey (KChar 'H')  []     , SetCursor $ Page $ Frac 0.1)
-    , (EvKey (KChar 'M')  []     , SetCursor $ Page $ Frac 0.5)
-    , (EvKey (KChar 'L')  []     , SetCursor $ Page $ Frac 0.9)
+    , char  'H'       ~> [SetCursor $ Page $ Frac 0.1]
+    , char  'M'       ~> [SetCursor $ Page $ Frac 0.5]
+    , char  'L'       ~> [SetCursor $ Page $ Frac 0.9]
 
-    , (EvKey KHome        [MCtrl], SetCursor $ File $ Frac 0)
-    , (EvKey KEnd         [MCtrl], SetCursor $ File $ Frac 1)
-    , (EvKey (KChar 'g')  []     , SetCursor $ File $ Frac 0)
-    , (EvKey (KChar 'G')  []     , SetCursor $ File $ Frac 1)
+    , keyC  KHome     ~> [SetCursor $ File $ Frac 0]
+    , keyC  KEnd      ~> [SetCursor $ File $ Frac 1]
+    , char  'g'       ~> [SetCursor $ File $ Frac 0]
+    , char  'G'       ~> [SetCursor $ File $ Frac 1]
 
-    , (EvKey KPageUp      []     , SetScroll $ Page $ Rel (-1))
-    , (EvKey KPageDown    []     , SetScroll $ Page $ Rel 1)
-    , (EvKey KUp          [MCtrl], SetScroll $ Line $ Rel (-1))
-    , (EvKey KDown        [MCtrl], SetScroll $ Line $ Rel 1)
+    , key   KPageUp   ~> [SetScroll $ Page $ Rel (-1)]
+    , key   KPageDown ~> [SetScroll $ Page $ Rel 1]
+    , keyC  KUp       ~> [SetScroll $ Line $ Rel (-1)]
+    , keyC  KDown     ~> [SetScroll $ Line $ Rel 1]
 
-    , (EvKey (KChar 'g')  [MCtrl], SetMode OffsetInput)
+    , charC 'g'       ~> [SetMode OffsetInput]
 
-    , (EvKey (KChar '<')  []     , SetColumnWdt $ Rel (-1))
-    , (EvKey (KChar '>')  []     , SetColumnWdt $ Rel 1)
+    , char  '<'       ~> [SetColumnWdt $ Rel (-1)]
+    , char  '>'       ~> [SetColumnWdt $ Rel 1]
 
-    , (EvKey (KChar 't')  []     , Set256Colors Off)
-    , (EvKey (KChar 'T')  []     , Set256Colors On)
+    , char  't'       ~> [Set256Colors Off]
+    , char  'T'       ~> [Set256Colors On]
 
-    , (EvKey (KChar ' ')  []     , SetMark Toggle)
-    , (EvKey (KChar 'm')  []     , SetMark Toggle)
-    , (EvKey (KChar 'M')  []     , SetMode MarkInput)
-    , (EvKey (KChar 'N')  []     , JumpMark Bw)
-    , (EvKey (KChar 'n')  []     , JumpMark Fw)
-    , (EvKey KLeft        [MCtrl], JumpMark Bw)
-    , (EvKey KRight       [MCtrl], JumpMark Fw)
+    , char  ' '       ~> [SetMark Toggle]
+    , char  'm'       ~> [SetMark Toggle]
+    , charA 'm'       ~> [SetMode MarkInput]
+    , charC '@'       ~> [SetMode MarkInput]
+    , char  'N'       ~> [JumpMark Bw]
+    , char  'n'       ~> [JumpMark Fw]
+    , keyC  KLeft     ~> [JumpMark Bw]
+    , keyC  KRight    ~> [JumpMark Fw]
 
-    , (EvKey (KChar 'u')  []     , JumpHistory Bw)
-    , (EvKey (KChar 'z')  [MCtrl], JumpHistory Bw)
-    , (EvKey (KChar 'r')  [MCtrl], JumpHistory Fw)
+    , char  'u'       ~> [JumpHistory Bw]
+    , charC 'z'       ~> [JumpHistory Bw]
+    , charC 'r'       ~> [JumpHistory Fw]
 
-    , (EvKey KDel         []     , Delete Fw)
-    , (EvKey (KChar 'x')  []     , Delete Fw)
+    , key   KDel      ~> [Delete Fw]
+    , char  'x'       ~> [Delete Fw]
 
-    , (EvKey (KChar 'w')  []     , Store)
-    , (EvKey (KChar 's')  [MCtrl], Store)
+    , char  'w'       ~> [Store]
+    , charC 's'       ~> [Store]
 
-    , (EvKey (KChar 'q')  []     , Quit False)
-    , (EvKey (KChar 'q')  [MCtrl], Quit True)  -- ignored, just for doc
+    , char  'q'       ~> [Quit False]
+    , charC 'q'       ~> [Quit True]  -- ignored, just for doc
+    , charC 'l'       ~> [Refresh]
     ]
 
 lineNav = mkKeymap
-    [ (EvKey KEsc   [], CancelInput)
-    , (EvKey KEnter [], CommitInput)
+    [ key KEsc   ~> [CancelInput]
+    , key KEnter ~> [CommitInput]
 
-    , (EvKey KLeft  [], SetCursor $ Char $ Rel (-1))
-    , (EvKey KRight [], SetCursor $ Char $ Rel 1)
-    , (EvKey KBS    [], Delete Bw)
-    , (EvKey KDel   [], Delete Fw)
-    , (EvKey KHome  [], SetCursor $ Char $ Frac 0)
-    , (EvKey KEnd   [], SetCursor $ Char $ Frac 1)
+    , key KLeft  ~> [SetCursor $ Char $ Rel (-1)]
+    , key KRight ~> [SetCursor $ Char $ Rel 1]
+    , key KBS    ~> [Delete Bw]
+    , key KDel   ~> [Delete Fw]
+    , key KHome  ~> [SetCursor $ Char $ Frac 0]
+    , key KEnd   ~> [SetCursor $ Char $ Frac 1]
     ]
 
 hexOverwrite = mkKeymap
-    [ (EvKey (KChar '\t') []     , SetMode CharOverwrite)
-    , (EvKey KIns         []     , SetMode HexInsert)
+    [ char '\t' ~> [SetMode CharOverwrite]
+    , key  KIns ~> [SetMode HexInsert]
     ]
 
 charOverwrite = mkKeymap
-    [ (EvKey KIns         [], SetMode CharInsert)
-    , (EvKey (KChar '\t') [], SetMode HexOverwrite)
-    , (EvKey KEsc         [], SetMode HexOverwrite)
+    [ key  KIns ~> [SetMode CharInsert]
+    , char '\t' ~> [SetMode HexOverwrite]
+    , key  KEsc ~> [SetMode HexOverwrite]
     ]
 
 hexInsert = mkKeymap
-    [ (EvKey KIns         [], SetMode HexOverwrite)
-    , (EvKey (KChar '\t') [], SetMode CharInsert)
-    , (EvKey KEsc         [], SetMode HexOverwrite)
+    [ key  KIns ~> [SetMode HexOverwrite]
+    , char '\t' ~> [SetMode CharInsert]
+    , key  KEsc ~> [SetMode HexOverwrite]
     ]
 
 charInsert = mkKeymap
-    [ (EvKey KIns         [], SetMode CharOverwrite)
-    , (EvKey (KChar '\t') [], SetMode HexInsert)
-    , (EvKey KEsc         [], SetMode HexOverwrite)
+    [ key  KIns ~> [SetMode CharOverwrite]
+    , char '\t' ~> [SetMode HexInsert]
+    , key  KEsc ~> [SetMode HexOverwrite]
     ]
+
+
+key ~> script = (key, script)
+
+char  c = EvKey (KChar c) []
+charC c = EvKey (KChar c) [MCtrl]
+charA c = EvKey (KChar c) [MMeta]
+key   k = EvKey k         []
+keyC  k = EvKey k         [MCtrl]
+keyA  k = EvKey k         [MMeta]

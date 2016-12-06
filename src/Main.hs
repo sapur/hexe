@@ -3,11 +3,16 @@ module Main where
 
 import Control.Exception
 import Control.Monad
+import Data.Maybe
+import System.Directory
+import System.FilePath
 import System.IO
 import Text.Printf
 
 import Graphics.Vty hiding (update, setMode)
 
+import Command.Execute
+import Command.Parser
 import Control
 import Editor
 import Helpers
@@ -18,26 +23,48 @@ import Options
 
 import qualified Buffer as Buf
 
-import Data.Version
 import Paths_hexe
 
 
 main = do
     opts <- parseOptions
     case opts of
-        PrintVersion -> printVersion
         ListKeymap   -> putStr $ renderKeymapByMode     defaultKeymaps
         ListBindings -> putStr $ renderKeymapByCategory defaultKeymaps
         Options{..}  -> run opts
 
-run opts = action `catch` exception  where
+run opts@Options{..} = action `catch` exception  where
     action = do
-        buf <- Buf.readFile (optFilename opts)
-        runUI buf opts
+        buf <- Buf.readFile optFilename
+
+        let check fileM = do
+                file <- fileM
+                b    <- doesFileExist file
+                return $ if b then Just file else Nothing
+
+        globalCfg <- check $ getDataFileName "config"
+        userCfg   <- check $ (</> "config") <$> getXdgDirectory XdgConfig "hexe"
+
+        let files = catMaybes $ globalCfg : userCfg : map Just optScripts
+
+        pScripts <- forM files $ \fn -> do
+            raw <- readFile fn
+            return $ parseScript fn raw
+
+        let pCdl  = mapM (parseScript "<ARG>") optCommands
+            pCmds = (++) <$> sequence pScripts <*> pCdl
+
+        case pCmds of
+            Left err ->
+                hPrint stderr err
+            Right scripts -> do
+                let cmds = concat scripts
+                runUI buf opts cmds
+
     exception =
         hPutStrLn stderr . formatIOEx
 
-runUI buf Options{..} = do
+runUI buf Options{..} cmds = do
     cfg <- standardIOConfig
     vty <- mkVty cfg
 
@@ -46,15 +73,23 @@ runUI buf Options{..} = do
     EditorState ed1 _ <- (`execCommand` mkEditorState ed0) $ do
         setMode HexOverwrite
 
-        setColumnWdtAbs optColumnWdt
+        (twdt,_) <- displayBounds $ outputIface vty
+        setColumnWdtAbs $ if twdt == 80 then 4 else 1
+
+        -- defaults above --
+        executeScript cmds
+        -- command-line arguments below --
+
+        let ifSet o a = maybe (return ()) a o
+
+        ifSet optColumnWdt setColumnWdtAbs
+        ifSet optCursor    cursorAbs
 
         let marks = map (\o     -> (o, Just "")) optMarks
                  ++ map (\(o,t) -> (o, Just t )) optNamedMarks
         forM_ marks $ \(offset, text) -> do
             cursorAbs offset
             setMark text
-
-        cursorAbs optCursor
 
         showNotice $ printf "Loaded '%s'." optFilename
 
@@ -78,14 +113,7 @@ mainLoop ed0 = do
         EvResize wdt hgt ->
             mainLoop (reshape wdt hgt ed1)
         ev -> do
-            let cmd = lookupCommand ev (edMode ed1) $ edKeymaps ed1
+            let cmd = lookupScript ev (edMode ed1) $ edKeymaps ed1
             EditorState ed2 bQuit <- execCommand cmd (mkEditorState ed1)
             let ed3 = updateInfo ed2
             unless bQuit (mainLoop ed3)
-
-
-printVersion =
-    let msg = unlines
-            [ "hexe %s"
-            ]
-    in  printf msg (showVersion version)
