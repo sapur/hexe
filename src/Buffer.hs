@@ -136,6 +136,7 @@ extendCond offset buf
 
 setMark offset mark buf = buf{ bufChunks = assertChunks chunks' }  where
     chunks'  = modifyChunks offset 1 set (bufChunks buf)
+    set []   = []
     set [ch] = [ch{ chMark = mark }]
     set chs  = error $ printf "Oops, %s should never happen" (show chs)
 

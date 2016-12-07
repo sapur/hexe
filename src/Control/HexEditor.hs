@@ -4,7 +4,7 @@ module Control.HexEditor (
     setColumnWdtAbs, setColumnWdtRel,
     overwriteHex, overwriteCharKey, deleteByte,
     prepareInsert,
-    setMark, toggleMark, findMark,
+    setMark, setMarkAt, toggleMark, findMark,
     withUndo, undo, redo,
     setStyle, color16, color256,
 ) where
@@ -115,6 +115,10 @@ deleteByte = withUndo (withEditor delete)  where
 
 setMark b = withEditor $ \ed -> ed
     { edBuffer = Buf.setMark (edCursor ed) b (edBuffer ed)
+    }
+
+setMarkAt offset b = withEditor $ \ed -> ed
+    { edBuffer = Buf.setMark offset b (edBuffer ed)
     }
 
 toggleMark = withEditor $ \ed ->

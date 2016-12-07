@@ -75,6 +75,9 @@ hexNav = mkKeymap
     , char  'w'       ~> [Store]
     , charC 's'       ~> [Store]
 
+    , charC 'x'       ~> [SetMode ScriptInput]
+    , char  ':'       ~> [SetMode ScriptInput]
+
     , char  'q'       ~> [Quit False]
     , charC 'q'       ~> [Quit True]  -- ignored, just for doc
     , charC 'l'       ~> [Refresh]

@@ -109,33 +109,42 @@ renderStatus ed = final  where
     wdt       = geoWidth (edGeo ed)
     pos       = (edCursor ed + 2) * 100 `div` (Buf.length (edBuffer ed) + 1)
     left      = string styOffset (printf "%08x  " (edCursor ed))
-            <|> statusCenter ed
     right     = string stySpace "  "
             <|> renderMode (edMode ed)
             <|> (if   Buf.isModified (edBuffer ed)
                  then string styAlt " * "
                  else string stySpace " ")
             <|> string styNotice (printf " %3d%%" pos)
-    final     = resizeWidth (wdt - imageWidth right) left <|> right
+    centerWdt = wdt - imageWidth left - imageWidth right
+    center    = resizeWidth centerWdt (statusCenter ed)
+    final     = left <|> center <|> right
 
-statusCenter ed = final  where
-    mode      = edMode ed
-    Style{..} = edStyle ed
-    chunk     = Buf.viewRange (edCursor ed) 1 (edBuffer ed)
-    hasLine   = not (isInLine mode)
+statusCenter Editor{..} = final  where
+    Style{..} = edStyle
+    chunk     = Buf.viewRange edCursor 1 edBuffer
+    hasLine   = not (isInLine edMode)
 
-    input c s = string styInput (take c s)
-            <|> string (styInput `withStyle` reverseVideo) [s !! c]
-            <|> string styInput (drop (c+1) s ++ " ")
     mark str  = string styMark "  "
             <|> string styInput (" " ++ str)
 
     final = case chunk of
-        _ | hasLine -> input (edLineCursor ed) (edLineText ed ++ " ")
-        _           -> fromMaybe tryMark (edMessage ed)
+        _ | hasLine -> inputLine edStyle edLineCursor edLineMarker
+                                 (edLineText ++" ")
+        _           -> fromMaybe tryMark edMessage
     tryMark = case chunk of
         [(_,_,Just str)] | not (null str) -> mark str
-        _                                 -> edInfo ed
+        _                                 -> edInfo
+
+inputLine Style{..} cur emk txt
+    = horizCat (zipWith inputChar [0..] (txt++" "))
+  <|> maybe emptyImage (string styWarn . (" "++) . snd) emk
+  where
+    inputChar offset c =
+        let sty = case emk of
+                _          | offset == cur -> styInput `withStyle` reverseVideo
+                Just (o,_) | offset == o   -> styInputError
+                _                          -> styInput
+        in  char sty c
 
 renderMode mode = case mode of
     HexOverwrite   -> title brightBlack  "Hex "
@@ -146,5 +155,6 @@ renderMode mode = case mode of
     CharInsert     -> title brightRed    "Char Ins"
     OffsetInput    -> title white        "Offset"
     MarkInput      -> title white        "Mark"
+    ScriptInput    -> title white        "Script"
   where
-    title color name = string (currentAttr `withForeColor` color) name
+    title color = string (currentAttr `withForeColor` color)

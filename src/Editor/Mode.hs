@@ -12,6 +12,7 @@ data InputMode
     | CharInsert
     | OffsetInput
     | MarkInput
+    | ScriptInput
     deriving (Show)
 
 
@@ -22,8 +23,9 @@ validChar mode = case mode of
     HexInsert      -> isHexDigit
     HexInserting   -> isHexDigit
     CharInsert     -> isPrint
-    OffsetInput    -> \ch -> isHexDigit ch || ch `elem` "xXoO"
+    OffsetInput    -> isPrint
     MarkInput      -> isPrint
+    ScriptInput    -> isPrint
 
 autoAccept mode txt = case mode of
     HexOverwrite   -> length txt >= 2
@@ -37,6 +39,7 @@ autoAccept mode txt = case mode of
 isInLine mode = case mode of
     OffsetInput    -> False
     MarkInput      -> False
+    ScriptInput    -> False
     _              -> True
 
 isEditing mode = case mode of
@@ -62,3 +65,4 @@ showMode mode = case mode of
     CharInsert     -> "Char Insert"
     OffsetInput    -> "Offset Input"
     MarkInput      -> "Mark Input"
+    ScriptInput    -> "Script Input"

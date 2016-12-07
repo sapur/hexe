@@ -30,6 +30,7 @@ execute cmd = case cmd of
 
     SetCursor pos -> caseEditor handleHex handleLine  where
         handleHex = case pos of
+            File (Abs  p) -> cursorAbs (int p)
             File (Frac p) -> cursorBuf p
             Char (Rel  p) -> cursorRel  p 0
             Line (Rel  p) -> cursorRel  0 p
@@ -60,6 +61,8 @@ execute cmd = case cmd of
         Toggle -> toggleMark
         _      -> showWarn "Not supported."
 
+    SetNamedMark offset text -> setMarkAt offset (Just text)
+
     JumpMark dir -> case dir of
         Bw -> findMark True
         Fw -> findMark False
@@ -70,11 +73,11 @@ execute cmd = case cmd of
            Bw -> deleteInput (-1)
            Fw -> deleteInput 1
 
-    CommitInput -> commitInput
+    CommitInput -> commitInput executeScript
 
     CancelInput -> cancelInput
 
-    Feed ch -> feedInput ch
+    Feed ch -> feedInput executeScript ch
 
 
 caseEditor hex line = do

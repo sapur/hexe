@@ -15,6 +15,7 @@ catGen  = "General"
 catMode = "Mode Switching"
 catNav  = "Navigation"
 catView = "Change View"
+catMark = "Bookmarks"
 catEdit = "Editing"
 catEx   = "Ex Mode"
 
@@ -27,11 +28,16 @@ renderScript
 
 renderCommand cmd = case cmd of
 
-    Quit b           -> catGen ? if b
+    Quit b -> catGen ? if b
         then "quit (without confirmation)"
         else "quit"
+    SetMode mode -> case mode of
+        MarkInput    -> catMark? "set mark with label at cursor"
+        OffsetInput  -> catNav ? "jump to offset"
+        ScriptInput  -> catGen ? "prompt for a command"
+        _            -> catMode? printf "switch to %s mode" (showMode mode)
+
     Refresh          -> catGen ? "refresh screen"
-    SetMode mode     -> catMode? printf "switch to %s mode" (showMode mode)
     Store            -> catGen ? "save the file"
     JumpHistory dir  -> catEdit? case dir of
         Bw -> "undo"
@@ -41,8 +47,9 @@ renderCommand cmd = case cmd of
     SetColumnWdt pos -> catView? printf "set column width %s"
                                         (renderPValue pos)
     Set256Colors sw  -> catView? printf "%s 256 color mode" (renderSwitch sw)
-    SetMark sw       -> catNav ? printf "%s mark at cursor" (renderSwitch sw)
-    JumpMark dir     -> catNav ? printf "jump to mark %s" (renderDirection dir)
+    SetMark sw       -> catMark? printf "%s mark at cursor" (renderSwitch sw)
+    SetNamedMark o t -> catMark? printf "set mark '%s' at offset %d" t o
+    JumpMark dir     -> catMark? printf "jump to mark %s" (renderDirection dir)
     Delete dir       -> catEdit? printf "delete %s" (renderDirection dir)
     CommitInput      -> catEx  ? "execute command"
     CancelInput      -> catEx  ? "cancel pending command"

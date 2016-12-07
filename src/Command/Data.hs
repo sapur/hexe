@@ -24,6 +24,7 @@ data Command
     | SetColumnWdt PValue
     | Set256Colors Switch
     | SetMark Switch
+    | SetNamedMark Int String
     | JumpMark Direction
     | Delete Direction
     | CommitInput

@@ -37,6 +37,7 @@ data Editor = Editor
     , edLastMode   :: InputMode
     , edLineText   :: String
     , edLineCursor :: Int
+    , edLineMarker :: Maybe (Int, String)
     , edKeymaps    :: Keymaps
     }
 
@@ -79,6 +80,7 @@ mkEditor vty buf kms = do
         , edLastMode   = HexOverwrite
         , edLineText   = ""
         , edLineCursor = 0
+        , edLineMarker = Nothing
         , edKeymaps    = kms
         }
 

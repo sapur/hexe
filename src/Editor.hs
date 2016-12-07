@@ -4,7 +4,7 @@ module Editor (
     setCursor, setScroll,
     modifyEditor,
     histCheckpoint, histUndo, histRedo,
-    clearMessage, setMessage,
+    clearMessage, setMessage, setLineError,
     updateInfo,
     renderView,
     msgNotice, msgWarn
@@ -90,9 +90,14 @@ histUndo = histOp Hist.undo
 histRedo = histOp Hist.redo
 
 
-clearMessage ed = ed{ edMessage = Nothing }
+clearMessage ed = ed
+    { edMessage    = Nothing
+    , edLineMarker = Nothing
+    }
 
 setMessage msg ed = ed{ edMessage = Just msg }
+
+setLineError n ed = ed{ edLineMarker = Just n }
 
 
 updateInfo ed = ed{ edInfo = styled info }  where

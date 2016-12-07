@@ -5,8 +5,9 @@ module Control.LineEditor (
 
 import Control.Arrow
 import Control.Monad
-import Text.Read (readMaybe)
 
+import Command.Data
+import Command.Parser
 import Editor
 
 import qualified Buffer as Buf
@@ -21,10 +22,50 @@ setMode mode = withEditor $ \ed -> ed
 
 cancelInput = modeReturn
 
-commitInput = do
+commitInput execute = do
     ed  <- getsEditor id
-    ret <- commitAction (edMode ed) (edLineText ed)
-    when ret modeReturn
+    commitAction execute (edMode ed) (edLineText ed)
+
+commitAction execute mode txt = case mode of
+    HexOverwrite ->
+        modeReturn
+    HexOverwriting -> do
+        overwriteHex txt
+        modeReturn
+    CharOverwrite -> do
+        whenSingleChar overwriteCharKey
+        modeReturn
+    HexInsert ->
+        modeReturn
+    HexInserting -> do
+        overwriteHex txt
+        modeReturn
+    CharInsert -> do
+        whenSingleChar overwriteCharKey
+        modeReturn
+    OffsetInput ->
+        case parseUnitValue Char "<LINE>" txt of
+            Left err ->
+                markError err
+            Right off -> do
+                modeReturn
+                execute [SetCursor off]
+    MarkInput -> do
+        setMark (Just txt)
+        modeReturn
+    ScriptInput ->
+        case parseScript "<LINE>" txt of
+            Left err ->
+                markError err
+            Right script -> do
+                modeReturn
+                execute script
+  where
+    whenSingleChar action = case txt of
+        [ch] -> action ch
+        _    -> return ()
+    markError err =
+        withEditor $ setLineError $ getInlineError err
 
 modeReturn = withEditor $ \ed0 ->
     let ed1 = setCursor (edCursor ed0)
@@ -43,38 +84,7 @@ modeReturn = withEditor $ \ed0 ->
                 , edLastMode = edMode ed1
                 }
 
-commitAction mode txt = case mode of
-    HexOverwrite ->
-        return True
-    HexOverwriting -> do
-        overwriteHex txt
-        return True
-    CharOverwrite -> do
-        whenSingleChar overwriteCharKey
-        return True
-    HexInsert ->
-        return True
-    HexInserting -> do
-        overwriteHex txt
-        return True
-    CharInsert -> do
-        whenSingleChar overwriteCharKey
-        return True
-    OffsetInput ->
-        case (readMaybe txt :: Maybe Int) of
-            Nothing  -> return False
-            Just off -> do
-                cursorAbs off
-                return True
-    MarkInput -> do
-        setMark (Just txt)
-        return True
-  where
-    whenSingleChar action = case txt of
-        [ch] -> action ch
-        _    -> return ()
-
-feedInput ch = do
+feedInput execute ch = do
     mode <- getsEditor edMode
     begin mode
     ed' <- getsEditor id
@@ -99,7 +109,7 @@ feedInput ch = do
             , edLineCursor = cur + 1
             }
         txt' <- getsEditor edLineText
-        when (autoAccept mode txt') commitInput
+        when (autoAccept mode txt') (commitInput execute)
 
 
 moveInput d = withEditor $ clampInput . \ed -> ed

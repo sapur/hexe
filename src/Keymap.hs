@@ -19,7 +19,7 @@ lookupScript ev mode kms
 lookupKey ev _    []       = unhandledKey ev
 lookupKey ev mode (km:kms) = case M.lookup ev (km :: Keymap) of
     Nothing  -> case ev of
-        EvKey (KChar ch) [] | validChar mode ch -> feedInput ch
+        EvKey (KChar ch) [] | validChar mode ch -> feedInput executeScript ch
         _                                       -> lookupKey ev mode kms
     Just cmd -> executeScript cmd
 
@@ -35,3 +35,4 @@ selectKeymaps mode kms
         CharInsert     -> [CharInsKeys, HexNavKeys]
         OffsetInput    -> [LineNavKeys]
         MarkInput      -> [LineNavKeys]
+        ScriptInput    -> [LineNavKeys]
