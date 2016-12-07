@@ -26,16 +26,13 @@ import qualified Buffer as Buf
 import Paths_hexe
 
 
-main = do
-    opts <- parseOptions
-    case opts of
-        ListKeymap   -> putStr $ renderKeymapByMode     defaultKeymaps
-        ListBindings -> putStr $ renderKeymapByCategory defaultKeymaps
-        Options{..}  -> run opts
+main = run =<< parseOptions
 
 run opts@Options{..} = action `catch` exception  where
     action = do
-        buf <- Buf.readFile optFilename
+        buf <- case optAction of
+            Edit file -> Buf.readFile file
+            _         -> return $ Buf.mkBuffer "unnamed"
 
         let check fileM = do
                 file <- fileM
@@ -91,14 +88,21 @@ runUI buf Options{..} cmds = do
             cursorAbs offset
             setMark text
 
-        showNotice $ printf "Loaded '%s'." optFilename
+        showNotice $ printf "Loaded '%s'." (Buf.bufPath buf)
 
-    eiEx <- try $ mainLoop ed1
+    finalCmd <- case optAction of
+        Edit _ -> do
+            eiEx <- try $ mainLoop ed1
+            return $ case eiEx of
+                Left ex -> hPrint stderr (ex :: SomeException)
+                Right _ -> return ()
+        ListKeymap ->
+            return $ putStr $ renderKeymapByMode $ edKeymaps ed1
+        ListBindings ->
+            return $ putStr $ renderKeymapByCategory $ edKeymaps ed1
+
     shutdown vty
-
-    case eiEx of
-        Left ex -> hPrint stderr (ex :: SomeException)
-        Right _ -> return ()
+    finalCmd
 
 
 mainLoop ed0 = do
@@ -110,6 +114,9 @@ mainLoop ed0 = do
     nextEvent vty >>= \ev -> case ev of
         EvKey (KChar 'q') [MCtrl] ->
             return ()
+        EvKey (KChar 'l') [MCtrl] -> do
+            refresh vty
+            mainLoop ed1
         EvResize wdt hgt ->
             mainLoop (reshape wdt hgt ed1)
         ev -> do

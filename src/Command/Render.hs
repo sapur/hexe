@@ -7,8 +7,12 @@ import Control.Arrow
 import Data.List
 import Text.Printf
 
+import Graphics.Vty.Input.Events
+
 import Command.Data
 import Editor.Mode
+import Keymap.Data.Name
+import Render
 
 
 catGen  = "General"
@@ -48,12 +52,18 @@ renderCommand cmd = case cmd of
                                         (renderPValue pos)
     Set256Colors sw  -> catView? printf "%s 256 color mode" (renderSwitch sw)
     SetMark sw       -> catMark? printf "%s mark at cursor" (renderSwitch sw)
-    SetNamedMark o t -> catMark? printf "set mark '%s' at offset %d" t o
+    SetNamedMark o t -> catMark? printf "set mark '%s' at offset %s" t
+                                        (renderPUnit o)
     JumpMark dir     -> catMark? printf "jump to mark %s" (renderDirection dir)
     Delete dir       -> catEdit? printf "delete %s" (renderDirection dir)
     CommitInput      -> catEx  ? "execute command"
     CancelInput      -> catEx  ? "cancel pending command"
     Feed ch          -> catEx  ? printf "type '%c'" ch
+    Bind kmn ev scr  -> catGen ? printf "bind '%s' in '%s' to: %s"
+                                        (renderKey ev) (showKeymapName kmn)
+                                        (snd $ renderScript scr)
+
+renderKey (EvKey key mods) = showKey key mods
 
 renderPValue :: PValue -> String
 renderPValue pos = renderValue pos ""

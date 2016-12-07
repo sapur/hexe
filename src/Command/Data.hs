@@ -8,7 +8,10 @@ module Command.Data (
     InputMode (..)
 ) where
 
+import Graphics.Vty
+
 import Editor.Mode
+import Keymap.Data.Name
 
 
 type Script = [Command]
@@ -24,12 +27,13 @@ data Command
     | SetColumnWdt PValue
     | Set256Colors Switch
     | SetMark Switch
-    | SetNamedMark Int String
+    | SetNamedMark (PUnit PValue) String
     | JumpMark Direction
     | Delete Direction
     | CommitInput
     | CancelInput
     | Feed Char
+    | Bind KeymapName Event Script
     deriving (Show)
 
 data PValue

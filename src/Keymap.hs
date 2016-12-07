@@ -1,5 +1,6 @@
 module Keymap (
     lookupScript,
+    rebindKey,
 ) where
 
 import qualified Data.Map as M

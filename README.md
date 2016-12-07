@@ -9,10 +9,10 @@
  * Unlimited undo and redo
  * Set bookmarks at any offset and jump between marks
  * Freely adjustable column width
+ * Changeable key mappings
 
 **Features hexe does NOT have:**
 
- * Changeable key mappings (almost supported)
  * Unlimited file size
  * Multiple buffers
 
@@ -49,5 +49,9 @@ any commands, for example:
 
     column-width =8
     set-mode char-over
+    bind hex-nav C-PageDown scroll line+10
+    bind line-nav Tab cancel
+    # insert a null character when Ctrl+y is pressed
+    bind hex-over C-y set-mode hex-ins, feed '0', feed '0', set-mode hex-over
 
 Refer to `hexe --help` for a list of all command-line options.

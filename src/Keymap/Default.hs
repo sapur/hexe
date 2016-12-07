@@ -80,7 +80,9 @@ hexNav = mkKeymap
 
     , char  'q'       ~> [Quit False]
     , charC 'q'       ~> [Quit True]  -- ignored, just for doc
-    , charC 'l'       ~> [Refresh]
+    , charC 'l'       ~> [Refresh]    -- ignored, just for doc
+
+    , key KEnter ~> [Bind HexNavKeys (key KEnter) [SetMark Toggle]]
     ]
 
 lineNav = mkKeymap

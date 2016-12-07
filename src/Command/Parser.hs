@@ -8,12 +8,15 @@ module Command.Parser (
 
 import Control.Monad
 
+import Data.Char
 import Data.List
-import Text.Parsec        hiding (token)
+import Graphics.Vty.Input.Events
+import Text.Parsec hiding (token)
 import Text.Parsec.Error
 import Text.Parsec.String
 
 import Command.Data
+import Keymap.Data.Name
 
 
 parseScript = parse script
@@ -39,6 +42,7 @@ script = do
 statement     = skipSpaces >> commands <* endOfLine
 lastStatement = skipSpaces >> commands <* (void endOfLine <|> eof)
 commands      = command `sepBy` charTok ';'
+bindCommands  = command `sepBy` charTok ','
 
 command
     = do name "quit"
@@ -54,12 +58,70 @@ command
   <|> name "column-width" *>  (SetColumnWdt <$> pValue)
   <|> name "256colors"    *>  (Set256Colors <$> switch)
   <|> name "mark-here"    *>  (SetMark <$> switch)
-  <|> name "mark"         *>  (SetNamedMark <$> natLit <*> strLit)
+  <|> name "mark"         *>  (SetNamedMark <$> pUnitValue Char <*> strLit)
   <|> name "jump-mark"    *>  (JumpMark <$> direction)
   <|> name "delete"       *>  (Delete <$> direction)
   <|> name "commit"       *>= CommitInput
   <|> name "cancel"       *>= CancelInput
   <|> name "feed"         *>  (Feed <$> charLit)
+  <|> name "bind"         *>  (Bind <$> keymapName <*> event <*> bindCommands)
+
+
+event = choice
+    [ try $ do mods <- pModifiers
+               key  <- pKey
+               return $ EvKey key mods
+    , (\k -> EvKey k []) <$> pKey
+    ]
+  where
+    pKey          = specialKey <|> charKey
+    specialKey    = choice
+        [ name "Esc"       *>= KEsc
+        , name "BS"        *>= KBS
+        , name "Enter"     *>= KEnter
+        , name "Left"      *>= KLeft
+        , name "Right"     *>= KRight
+        , name "Up"        *>= KUp
+        , name "Down"      *>= KDown
+        , name "UpLeft"    *>= KUpLeft
+        , name "UpRight"   *>= KUpRight
+        , name "DownLeft"  *>= KDownLeft
+        , name "DownRight" *>= KDownRight
+        , name "Center"    *>= KCenter
+        , name "BackTab"   *>= KBackTab
+        , name "PrtScr"    *>= KPrtScr
+        , name "Pause"     *>= KPause
+        , name "Ins"       *>= KIns
+        , name "Home"      *>= KHome
+        , name "PageUp"    *>= KPageUp
+        , name "Del"       *>= KDel
+        , name "End"       *>= KEnd
+        , name "PageDown"  *>= KPageDown
+        , name "Begin"     *>= KBegin
+        , name "Menu"      *>= KMenu
+        , name "Tab"       *>= KChar '\t'
+        , name "Space"     *>= KChar ' '
+        , name "Hash"      *>= KChar '#'
+        , char 'F'         >>  KFun <$> natLit
+        ]
+    charKey       = token "key" $ KChar <$> satisfy isPrint
+
+    pModifiers    = many mod <* char '-'
+    mod           = modFromChar <$> oneOf "SCMA"
+    modFromChar c = case c of
+        'S' -> MShift
+        'C' -> MCtrl
+        'M' -> MMeta
+        'A' -> MAlt
+
+keymapName = choice
+    [ name "hex-nav"   *>= HexNavKeys
+    , name "line-nav"  *>= LineNavKeys
+    , name "hex-over"  *>= HexOverKeys
+    , name "char-over" *>= CharOverKeys
+    , name "hex-ins"   *>= HexInsKeys
+    , name "char-ins"  *>= CharInsKeys
+    ]
 
 
 pUnitValue def = token "value-with-unit" $ choice

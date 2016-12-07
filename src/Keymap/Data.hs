@@ -1,10 +1,11 @@
 module Keymap.Data (
+    module Keymap.Data.Name,
     Keymaps,
     Keymap, mkKeymap,
     KeymapName (..),
     emptyKeymap,
     lookupKeymap,
-    showKeymapName,
+    rebindKey,
 ) where
 
 import Data.Maybe
@@ -15,19 +16,11 @@ import qualified Data.Map as M
 import Graphics.Vty hiding (Style)
 
 import Command.Data
+import Keymap.Data.Name
 
 
 type Keymaps = Map KeymapName Keymap
 type Keymap  = Map Event Script
-
-data KeymapName
-    = HexNavKeys
-    | LineNavKeys
-    | HexOverKeys
-    | CharOverKeys
-    | HexInsKeys
-    | CharInsKeys
-    deriving (Eq, Ord, Show)
 
 
 mkKeymap binds = M.fromList binds :: Keymap
@@ -37,11 +30,4 @@ emptyKeymap = M.fromList $ map (\key -> (EvKey key [], [Quit True]))
 
 lookupKeymap name kms = fromMaybe emptyKeymap $ M.lookup name kms
 
-
-showKeymapName name = case name of
-    HexNavKeys   -> "Hex Navigation"
-    LineNavKeys  -> "Line Navigation"
-    HexOverKeys  -> "Hex Overwrite"
-    CharOverKeys -> "Char Overwrite"
-    HexInsKeys   -> "Hex Insert"
-    CharInsKeys  -> "Char Insert"
+rebindKey kmn ev script = M.adjust (M.insert ev script) kmn

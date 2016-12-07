@@ -1,6 +1,7 @@
 module Control.General (
     storeFile,
     safeQuit,
+    rebindKeyEd,
     unhandledKey,
     message, showNotice, showInfo, showWarn,
     refreshScreen,
@@ -18,6 +19,7 @@ import Editor
 import Editor.Style
 import Helpers
 import Render
+import Keymap.Data
 
 import           Buffer (Buffer (..))
 import qualified Buffer as Buf
@@ -36,6 +38,11 @@ storeFile = gets cstEditor >>= \ed -> do
     (buf', msg) <- lift (trySave `catch` didn'tWork)
     withEditor $ const ed{ edBuffer = buf' }
     message msg
+
+
+rebindKeyEd kmn ev script = withEditor $ \ed -> ed
+    { edKeymaps = rebindKey kmn ev script (edKeymaps ed)
+    }
 
 
 safeQuit = do

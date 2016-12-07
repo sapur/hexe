@@ -61,7 +61,9 @@ execute cmd = case cmd of
         Toggle -> toggleMark
         _      -> showWarn "Not supported."
 
-    SetNamedMark offset text -> setMarkAt offset (Just text)
+    SetNamedMark pos text -> case pos of
+        File (Abs p) -> setMarkAt (int p) (Just text)
+        _      -> showWarn "Not supported."
 
     JumpMark dir -> case dir of
         Bw -> findMark True
@@ -78,6 +80,8 @@ execute cmd = case cmd of
     CancelInput -> cancelInput
 
     Feed ch -> feedInput executeScript ch
+
+    Bind kmn ev script -> rebindKeyEd kmn ev script
 
 
 caseEditor hex line = do
