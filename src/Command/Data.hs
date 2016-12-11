@@ -42,12 +42,12 @@ data PValue
     | Frac Float
     deriving (Show)
 
-data PUnit a
-    = Char a
-    | Word a
-    | Line a
-    | Page a
-    | File a
+data PUnit   a
+    = Char   a
+    | Line   a
+    | Page   a
+    | InLine a
+    | InPage a
     deriving (Show)
 
 data Switch

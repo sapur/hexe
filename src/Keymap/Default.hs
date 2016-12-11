@@ -29,19 +29,22 @@ hexNav = mkKeymap
     , char  'k'       ~> [SetCursor $ Line $ Rel (-1)]
     , char  'j'       ~> [SetCursor $ Line $ Rel 1]
 
-    , key   KHome     ~> [SetCursor $ Line $ Frac 0]
-    , key   KEnd      ~> [SetCursor $ Line $ Frac 1]
-    , char  '^'       ~> [SetCursor $ Line $ Frac 0]
-    , char  '$'       ~> [SetCursor $ Line $ Frac 1]
+    , key   KHome     ~> [SetCursor $ InLine $ Frac 0]
+    , key   KEnd      ~> [SetCursor $ InLine $ Frac 1]
+    , char  '^'       ~> [SetCursor $ InLine $ Frac 0]
+    , char  '$'       ~> [SetCursor $ InLine $ Frac 1]
 
-    , char  'H'       ~> [SetCursor $ Page $ Frac 0.1]
-    , char  'M'       ~> [SetCursor $ Page $ Frac 0.5]
-    , char  'L'       ~> [SetCursor $ Page $ Frac 0.9]
+    , char  'H'       ~> [SetCursor $ InPage $ Frac 0.1,
+                          SetCursor $ InLine $ Frac 0.5]
+    , char  'M'       ~> [SetCursor $ InPage $ Frac 0.5,
+                          SetCursor $ InLine $ Frac 0.5]
+    , char  'L'       ~> [SetCursor $ InPage $ Frac 0.9,
+                          SetCursor $ InLine $ Frac 0.5]
 
-    , keyC  KHome     ~> [SetCursor $ File $ Frac 0]
-    , keyC  KEnd      ~> [SetCursor $ File $ Frac 1]
-    , char  'g'       ~> [SetCursor $ File $ Frac 0]
-    , char  'G'       ~> [SetCursor $ File $ Frac 1]
+    , keyC  KHome     ~> [SetCursor $ Char $ Frac 0]
+    , keyC  KEnd      ~> [SetCursor $ Char $ Frac 1]
+    , char  'g'       ~> [SetCursor $ Char $ Frac 0]
+    , char  'G'       ~> [SetCursor $ Char $ Frac 1]
 
     , key   KPageUp   ~> [SetScroll $ Page $ Rel (-1)]
     , key   KPageDown ~> [SetScroll $ Page $ Rel 1]

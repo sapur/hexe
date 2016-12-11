@@ -4,6 +4,8 @@ module Options (
     parseOptions,
 ) where
 
+import Data.List
+
 import Options.Applicative
 import Text.Printf
 
@@ -105,6 +107,6 @@ marksReader = eitherReader $ \arg -> case reads ("[" ++ arg ++ "]") of
     _         -> Left "cannot parse offset list"
 
 
-versionText = unlines
+versionText = intercalate "\n"
     [ printf "hexe %s" (showVersion version)
     ]

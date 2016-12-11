@@ -16,6 +16,7 @@ import Text.Parsec.Error
 import Text.Parsec.String
 
 import Command.Data
+import Helpers
 import Keymap.Data.Name
 
 
@@ -127,10 +128,10 @@ keymapName = choice
 pUnitValue def = token "value-with-unit" $ choice
     [ try $ pUnit pValue
     , try $ pValue >>= \val -> return $ case val of
-        Abs  _ -> File val
-        Rel  _ -> def  val
-        Frac _ -> File val
-    , File . Abs <$> natLit
+        Abs  _ -> def val
+        Rel  _ -> def val
+        Frac _ -> def val
+    , def . Abs <$> natLit
     ]
 
 pValue = token "value" p  where
@@ -141,11 +142,11 @@ pValue = token "value" p  where
 
 pUnit p = compound "unit" $ do
     unit <- anyOf
-        [ tChar *>= Char
-        , tWord *>= Word
-        , tLine *>= Line
-        , tPage *>= Page
-        , tFile *>= File
+        [ try tChar *>= Char
+        , tLine     *>= Line
+        , tPage     *>= Page
+        , tInLine   *>= InLine
+        , tInPage   *>= InPage
         ]
     val  <- p
     return (unit val)
@@ -170,11 +171,11 @@ tMinus = char '-'
 tEqual = char '='
 tPcnt  = char '%'
 
-tChar = string "char"
-tWord = string "word"
-tLine = string "line"
-tPage = string "page"
-tFile = string "file"
+tChar   = string "char"
+tLine   = string "line"
+tPage   = string "page"
+tInLine = string "col"
+tInPage = string "in-page"
 
 tOn     = strTok "on"
 tOff    = strTok "off"
@@ -199,12 +200,25 @@ strLit = token "string"
        $ many $ noneOf "\"\r\n"
 
 natLit :: (Read a, Num a) => Parser a
-natLit = token "natural-number" $
-    read <$> choice
-        [ ("0x"++) <$> (try (string "0x") >> digits)
-        , ("0o"++) <$> (try (string "0o") >> digits)
-        , digits
-        ]
+natLit = token "natural-number" $ choice
+    [ try (string "0x") >> fromBase 16 hexDigit
+    , try (string "0o") >> fromBase 16 octDigit
+    , try (string "0b") >> fromBase  2 (oneOf "01")
+    , fromBase 10 digit
+    ]
+
+fromBase base digit = do
+    digits <- map conv . reverse <$> many1 digit
+    let (n,_) = foldl (\(total,fac) d -> (total + d*fac, fac*base))
+                      (0,1) digits
+    return n
+  where
+    [c0,c9,cA,cZ,ca,cz] = map ord "09AZaz"
+    conv = int . convW . ord
+    convW w = case () of
+        _ | w >= c0 && w <= c9 ->  0 + w-c0
+        _ | w >= cA && w <= cZ -> 10 + w-cA
+        _ | w >= ca && w <= cz -> 10 + w-ca
 
 floatLit :: Parser Float
 floatLit = token "floating-point-number" $ do

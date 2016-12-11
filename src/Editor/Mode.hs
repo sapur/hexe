@@ -56,6 +56,11 @@ nextMode mode = case mode of
     CharInsert     -> Just CharInsert
     _              -> Nothing
 
+extends mode = case mode of
+    HexInsert  -> True
+    CharInsert -> True
+    _          -> False
+
 showMode mode = case mode of
     HexOverwrite   -> "Hex Overwrite"
     HexOverwriting -> "Hex Overwriting"

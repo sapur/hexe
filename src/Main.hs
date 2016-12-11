@@ -80,12 +80,12 @@ runUI buf Options{..} cmds = do
         let ifSet o a = maybe (return ()) a o
 
         ifSet optColumnWdt setColumnWdtAbs
-        ifSet optCursor    cursorAbs
+        ifSet optCursor    $ withEditor . setCursor
 
         let marks = map (\o     -> (o, Just "")) optMarks
                  ++ map (\(o,t) -> (o, Just t )) optNamedMarks
         forM_ marks $ \(offset, text) -> do
-            cursorAbs offset
+            withEditor $ setCursor offset
             setMark text
 
         showNotice $ printf "Loaded '%s'." (Buf.bufPath buf)

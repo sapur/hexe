@@ -6,8 +6,10 @@ module Command.Execute (
 
 import Command.Data
 import Control
-import Editor.Data
+import Editor
 import Helpers
+
+import qualified Buffer as Buf
 
 
 executeScript :: Script -> EditorT IO ()
@@ -29,23 +31,13 @@ execute cmd = case cmd of
         Fw -> redo
 
     SetCursor pos -> caseEditor handleHex handleLine  where
-        handleHex = case pos of
-            File (Abs  p) -> cursorAbs (int p)
-            File (Frac p) -> cursorBuf p
-            Char (Rel  p) -> cursorRel  p 0
-            Line (Rel  p) -> cursorRel  0 p
-            Line (Frac p) -> cursorLine p
-            Page (Frac p) -> cursorPage p 0.5
-            _             -> showWarn "Not supported."
+        handleHex  = calculateMotion edCursor setCursor pos
         handleLine = case pos of
             Char (Rel  p) -> moveInput p
             Char (Frac p) -> moveInput $ round (2*(p-0.5)) * (maxBound`div`2)
             _             -> showWarn "Not supported."
 
-    SetScroll pos -> case pos of
-        Line (Rel p) -> scroll 0 p
-        Page (Rel p) -> scroll (fromIntegral p) 0
-        _            -> showWarn "Not supported."
+    SetScroll pos -> calculateMotion edScroll setScroll pos
 
     SetColumnWdt pos -> case pos of
         Abs p -> setColumnWdtAbs (int p)
@@ -62,7 +54,7 @@ execute cmd = case cmd of
         _      -> showWarn "Not supported."
 
     SetNamedMark pos text -> case pos of
-        File (Abs p) -> setMarkAt (int p) (Just text)
+        Char (Abs p) -> setMarkAt (int p) (Just text)
         _      -> showWarn "Not supported."
 
     JumpMark dir -> case dir of
@@ -87,3 +79,39 @@ execute cmd = case cmd of
 caseEditor hex line = do
     isEdit <- getsEditor $ isEditing . edMode
     if isEdit then line else hex
+
+
+calculateMotion get set motion = withEditor $ \ed ->
+    let geo     = edGeo ed
+        len     = Buf.length (edBuffer ed)
+                + if extends (edMode ed) then 1 else 0
+        cursor  = get ed
+        scroll  = edScroll ed
+        pick    = pickFromRange (int len) (int cursor)
+        cursor' = case motion of
+            Char   v -> pick 1 v
+            Line   v -> pick (int $ geoCols  geo) v
+            Page   v -> pick (int $ geoCells geo) v
+            InLine v -> pickFromSubRange (int scroll) (int cursor)
+                                         (int $ geoCols geo) v
+            InPage v -> pickFromSubRange (int scroll) (int cursor)
+                                         (int $ geoCells geo) v
+    in  set (int cursor') ed
+
+pickFromSubRange origin offset mul value = result  where
+    f i    = let base = i `div` mul
+                 rest = i `mod` mul
+             in  base*mul + pickFromValue mul rest value
+    result = origin + f (offset-origin)
+
+pickFromRange total offset mul value = offset'  where
+    count   = ((total-1) `div` mul) + 1
+    index   = offset `div` mul
+    rest    = offset `mod` mul
+    index'  = pickFromValue count index value
+    offset' = min total $ index'*mul + rest
+
+pickFromValue count current value = case value of
+    Abs  n -> min (count-1) n
+    Rel  i -> int $ clamp 0 (int count-1) (int current+i)
+    Frac r -> round (int (count-1) * r)

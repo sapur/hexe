@@ -1,6 +1,4 @@
 module Control.HexEditor (
-    cursorAbs, cursorBuf, cursorRel, cursorPage, cursorLine,
-    scroll, scrollCursor,
     setColumnWdtAbs, setColumnWdtRel,
     overwriteHex, overwriteCharKey, deleteByte,
     prepareInsert,
@@ -17,6 +15,7 @@ import Graphics.Vty hiding (update, Style)
 
 import Editor
 import Editor.Style
+import Helpers
 
 import qualified Buffer  as Buf
 import qualified History as Hist
@@ -24,56 +23,13 @@ import qualified History as Hist
 import Control.General
 
 
-cursorAbs offset = withEditor $ setCursor offset
-
-cursorBuf x = withEditor $ \ed ->
-    let maxOffset = Buf.length (edBuffer ed) - 1
-        offset    = round (x * fromIntegral maxOffset)
-    in  setCursor offset ed
-
-cursorRel cols rows = withEditor $ \ed ->
-    let offset = edCursor ed
-               + rows * geoCols (edGeo ed)
-               + cols
-    in  setCursor offset ed
-
-cursorPage y x = withEditor $ \ed ->
-    let (scroll, cells) = ( fromIntegral $ edScroll ed :: Float
-                          , fromIntegral $ geoCells $ edGeo ed
-                          )
-        vertical = round (scroll + y * (cells-1))
-    in  setCursorInLine x
-      $ setCursor vertical ed
-
-cursorLine x = withEditor $ setCursorInLine x
-
-setCursorInLine x ed = setCursor offset ed  where
-    cols   = geoCols (edGeo ed)
-    flushL = fromIntegral $ (edCursor ed `div` cols)*cols
-    offset = round (flushL + x * fromIntegral (cols-1))
-
-
-scroll :: Float -> Int -> EditorT IO ()
-scroll pages rows = withEditor $ \ed ->
-    let geo    = edGeo ed
-        offset = edScroll ed
-               + round (pages * fromIntegral (geoCells geo))
-               + rows * geoCols geo
-    in  setScroll offset ed
-
-scrollCursor = withEditor $ \ed ->
-    let (geo, cursor) = (edGeo ed, edCursor ed)
-        offset        = cursor - (geoCells geo `div` 2)
-    in  setCursor cursor ed{ edScroll = offset }
-
-
 setColumnWdtAbs n = do
     msg <- withEditorSt mod
     showNotice msg
   where
-    mod ed = let mul = max 1 (min 128 n)
-                 msg  = printf "column width is %d" mul
-                 ed'  = relayout ed{ edColMul = mul }
+    mod ed = let mul = clamp 1 128 n
+                 msg = printf "column width is %d" mul
+                 ed' = relayout ed{ edColMul = mul }
              in  (msg, ed')
 
 setColumnWdtRel d = do
@@ -142,7 +98,10 @@ undo = histOp "undo" histUndo
 redo = histOp "redo" histRedo
 
 histOp name f = do
-    withEditor f
+    withEditor $ \ed0 ->
+        let ed1 = f ed0
+        in  ed1 { edBuffer = Buf.removeSlack (edCursor ed1) (edBuffer ed1)
+                }
     (undos, redos) <- getsEditor (Hist.getStats . edHistory)
     showNotice (printf "did %s, remaining: %d undos, %d redos" name undos redos)
 

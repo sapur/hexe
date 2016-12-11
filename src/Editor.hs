@@ -15,6 +15,7 @@ import Graphics.Vty hiding (update)
 import Editor.Data
 import Editor.Render
 import Editor.Style
+import Helpers
 
 import qualified Buffer  as Buf
 import qualified History as Hist
@@ -32,7 +33,7 @@ relayout ed = clampCursor ed
 
 setCursor offset ed = clampCursor ed
     { edCursor = offset
-    , edBuffer = Buf.extendCond offset
+    , edBuffer = (if extends (edMode ed) then Buf.extendCond offset else id)
                $ Buf.removeSlack (edCursor ed) (edBuffer ed)
     }
 
@@ -65,8 +66,6 @@ clampCursorSoft ed = ed{ edCursor = new }  where
     lbound = edScroll ed
     ubound = edScroll ed + geoCells (edGeo ed) - 1
     new    = clamp lbound ubound (edCursor ed)
-
-clamp lbound ubound = max lbound . min ubound
 
 
 modifyEditor fCursor fBuffer ed = clampCursor ed
@@ -102,7 +101,7 @@ setLineError n ed = ed{ edLineMarker = Just n }
 
 updateInfo ed = ed{ edInfo = styled info }  where
     styled = string (styInfo $ edStyle ed)
-    info   = "Happy."
+    info   = Buf.bufPath $ edBuffer ed
 
 
 msgNotice ed = string (styNotice $ edStyle ed)

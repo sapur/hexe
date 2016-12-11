@@ -25,6 +25,8 @@ import qualified Data.ByteString as BS
 import           Data.FingerTree (FingerTree, Measured, measure)
 import qualified Data.FingerTree as FT
 
+import Helpers
+
 
 data Buffer = Buffer
     { bufPath     :: FilePath
@@ -95,7 +97,7 @@ setByte offset b buf = setModified buf'  where
     buf'      = buf{ bufChunks = assertChunks chunks' }
     chunks'   = modifyChunks offset 1 set (bufChunks buf)
     set []    = []
-    set [old] = let mod = max Alt (min Ins (chMod old))
+    set [old] = let mod = clamp Alt Ins (chMod old)
                 in  [mkChunk mod (BS.singleton b)]
     set chs   = error $ printf "Oops, %s should never happen" (show chs)
 

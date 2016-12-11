@@ -70,11 +70,11 @@ renderPValue pos = renderValue pos ""
 
 renderPUnit :: PUnit PValue -> String
 renderPUnit pos = case pos of
-    Char n -> renderValue n "char"
-    Word n -> renderValue n "word"
-    Line n -> renderValue n "line"
-    Page n -> renderValue n "page"
-    File n -> renderValue n "file"
+    Char   n -> renderValue n "char"
+    Line   n -> renderValue n "line"
+    Page   n -> renderValue n "page"
+    InLine n -> renderValue n "column"
+    InPage n -> renderValue n "page"
 
 renderValue n unit = case n of
     Abs  val -> printf "to %s %d" unit val

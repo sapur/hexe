@@ -9,6 +9,7 @@ import Control.Monad
 import Command.Data
 import Command.Parser
 import Editor
+import Helpers
 
 import qualified Buffer as Buf
 
@@ -132,6 +133,6 @@ deleteInput d = do
 
 clampInput ed =
     let txt = edLineText ed
-        cur = min (length txt) (max 0 (edLineCursor ed))
+        cur = clamp 0 (length txt) (edLineCursor ed)
     in  ed { edLineCursor = cur
            }

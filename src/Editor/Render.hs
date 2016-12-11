@@ -21,9 +21,9 @@ import qualified Buffer as Buf
 
 
 renderView ed = do
-    let vty = edVty ed
-        img = render ed
-    Vty.update vty (picForImage img)
+    let vty        = edVty ed
+        (img, cur) = render ed
+    Vty.update vty (picForImage img){ picCursor = cur }
 
 render ed = result  where
     scrollOff = edScroll ed
@@ -41,10 +41,14 @@ render ed = result  where
                                  (edCursor ed) (edMode ed)
                                  (edLineText ed) cols effColMul (edStyle ed) ch
 
-    hexView    = vertCat hexLines
-    statusView = renderStatus ed
+    hexView            = vertCat hexLines
+    (statusView, ccol) = renderStatus ed
 
-    result     = hexView <-> statusView
+    cursor     = if   isInLine (edMode ed)
+                 then NoCursor
+                 else Cursor ccol (length chunks)
+
+    result     = (hexView <-> statusView, cursor)
 
 renderLine
     :: Int -> Int -> InputMode -> String -> Int -> Int -> Style
@@ -108,18 +112,20 @@ renderStatus ed = final  where
     Style{..} = edStyle ed
     wdt       = geoWidth (edGeo ed)
     pos       = (edCursor ed + 2) * 100 `div` (Buf.length (edBuffer ed) + 1)
-    left      = string styOffset (printf "%08x  " (edCursor ed))
+    left      = string styOffset (printf "%8X  " (edCursor ed))
     right     = string stySpace "  "
             <|> renderMode (edMode ed)
             <|> (if   Buf.isModified (edBuffer ed)
                  then string styAlt " * "
                  else string stySpace " ")
-            <|> string styNotice (printf " %3d%%" pos)
+            <|> string styOffset (printf " %3d%%" pos)
     centerWdt = wdt - imageWidth left - imageWidth right
-    center    = resizeWidth centerWdt (statusCenter ed)
-    final     = left <|> center <|> right
+    (centerRaw,off) = statusCenter ed
+    center    = resizeWidth centerWdt centerRaw
+    cursorCol = imageWidth left + off
+    final     = (left <|> center <|> right, cursorCol)
 
-statusCenter Editor{..} = final  where
+statusCenter Editor{..} = (final, coff)  where
     Style{..} = edStyle
     chunk     = Buf.viewRange edCursor 1 edBuffer
     hasLine   = not (isInLine edMode)
@@ -127,21 +133,21 @@ statusCenter Editor{..} = final  where
     mark str  = string styMark "  "
             <|> string styInput (" " ++ str)
 
+    coff      = edLineCursor
+
     final = case chunk of
-        _ | hasLine -> inputLine edStyle edLineCursor edLineMarker
-                                 (edLineText ++" ")
+        _ | hasLine -> inputLine edStyle edLineMarker (edLineText ++" ")
         _           -> fromMaybe tryMark edMessage
     tryMark = case chunk of
         [(_,_,Just str)] | not (null str) -> mark str
         _                                 -> edInfo
 
-inputLine Style{..} cur emk txt
+inputLine Style{..} emk txt
     = horizCat (zipWith inputChar [0..] (txt++" "))
   <|> maybe emptyImage (string styWarn . (" "++) . snd) emk
   where
     inputChar offset c =
         let sty = case emk of
-                _          | offset == cur -> styInput `withStyle` reverseVideo
                 Just (o,_) | offset == o   -> styInputError
                 _                          -> styInput
         in  char sty c
@@ -154,7 +160,7 @@ renderMode mode = case mode of
     HexInserting   -> title brightRed    "Hex Ins*"
     CharInsert     -> title brightRed    "Char Ins"
     OffsetInput    -> title white        "Offset"
-    MarkInput      -> title white        "Mark"
+    MarkInput      -> title green        "Mark"
     ScriptInput    -> title white        "Script"
   where
     title color = string (currentAttr `withForeColor` color)
