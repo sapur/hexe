@@ -73,6 +73,9 @@ runUI buf Options{..} cmds = do
         (twdt,_) <- displayBounds $ outputIface vty
         setColumnWdtAbs $ if twdt == 80 then 4 else 1
 
+        let colors = contextColorCount $ outputIface vty
+        when (colors <= 16) $ setStyle color16
+
         -- defaults above --
         executeScript cmds
         -- command-line arguments below --
@@ -80,6 +83,7 @@ runUI buf Options{..} cmds = do
         let ifSet o a = maybe (return ()) a o
 
         ifSet optColumnWdt setColumnWdtAbs
+        ifSet opt256Colors $ setStyle . \b -> if b then color256 else color16
         ifSet optCursor    $ withEditor . setCursor
 
         let marks = map (\o     -> (o, Just "")) optMarks

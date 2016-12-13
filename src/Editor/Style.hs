@@ -39,7 +39,7 @@ color16 = style  where
         , styOffset     = base `withForeColor` brightWhite
 
         , styNull       = base `withForeColor` cyan
-        , styMark       = base `withBackColor` green `withForeColor` brightWhite
+        , styMark       = base `withBackColor` green `withForeColor` black
         , styPrint      = base `withForeColor` brightWhite
         , styNonPrint   = base `withForeColor` cyan
         , styChanging   = base `withForeColor` yellow
