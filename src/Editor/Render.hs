@@ -26,22 +26,24 @@ renderView ed = do
     Vty.update vty (picForImage img){ picCursor = cur }
 
 render ed = result  where
+    Geo{..}   = edGeo ed
     scrollOff = edScroll ed
-    cells     = geoCells (edGeo ed)
-    bytes     = Buf.viewRange scrollOff cells (edBuffer ed)
-    cols      = geoCols (edGeo ed)
+    bytes     = Buf.viewRange scrollOff geoCells (edBuffer ed)
     colMul    = edColMul ed
-    effColMul = if   colMul >= 2 && colMul <= cols
+    effColMul = if   colMul >= 2 && colMul <= geoCols
                 then colMul
                 else maxBound
 
-    chunks          = chunksOf cols bytes
+    chunks          = chunksOf geoCols bytes
     hexLines        = zipWith hexLine [0..] chunks
-    hexLine line ch = renderLine (scrollOff + line * cols)
+    hexLine line ch = renderLine (scrollOff + line * geoCols)
                                  (edCursor ed) (edMode ed)
-                                 (edLineText ed) cols effColMul (edStyle ed) ch
+                                 (edLineText ed) geoCols effColMul
+                                 (edStyle ed) ch
+    padding         = replicate (geoRows - length chunks)
+                    $ string (stySpace $ edStyle ed) " "
 
-    hexView            = vertCat hexLines
+    hexView            = vertCat $ hexLines ++ padding
     (statusView, ccol) = renderStatus ed
 
     cursor     = if   isInLine (edMode ed)

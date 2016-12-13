@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                hexe
-version:             0.17
+version:             0.18
 synopsis:            A TUI hex editor
 author:              Stephan-A. Posselt
 maintainer:          dev-hexe@nimbrium.net
