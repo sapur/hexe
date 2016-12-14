@@ -30,16 +30,16 @@ main = run =<< parseOptions
 
 run opts@Options{..} = action `catch` exception  where
     action = do
-        (mode, buf) <- case optAction of
+        buf <- case optAction of
             Edit file -> do
                 eiBuffer <- try $ Buf.readFile file
                 case eiBuffer of
                     Right buf ->
-                        return (HexOverwrite, buf)
+                        return buf
                     Left ex  -> do
                         let _ = ex :: IOException
-                        return (HexInsert, Buf.mkBuffer file)
-            _ -> return (HexInsert, Buf.mkBuffer "unnamed")
+                        return $ Buf.mkBuffer file
+            _ -> return $ Buf.mkBuffer "unnamed"
 
         let check fileM = do
                 file <- fileM
@@ -63,19 +63,20 @@ run opts@Options{..} = action `catch` exception  where
                 hPrint stderr err
             Right scripts -> do
                 let cmds = concat scripts
-                runUI buf mode opts cmds
+                runUI buf opts cmds
 
     exception =
         hPutStrLn stderr . formatIOEx
 
-runUI buf mode Options{..} cmds = do
+runUI buf Options{..} cmds = do
     cfg <- standardIOConfig
     vty <- mkVty cfg
 
     ed0 <- mkEditor vty buf defaultKeymaps
 
     EditorState ed1 _ <- (`execCommand` mkEditorState ed0) $ do
-        setMode mode
+        when (Buf.length buf == 0)
+            $ setMode HexInsert
 
         (twdt,_) <- displayBounds $ outputIface vty
         setColumnWdtAbs $ if twdt == 80 then 4 else 1

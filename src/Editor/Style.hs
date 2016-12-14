@@ -49,7 +49,7 @@ color16 = style  where
         , styInput      = base `withForeColor` brightWhite
         , styInputError = styInput style `withBackColor` red
 
-        , styInfo       = base `withForeColor` white
+        , styInfo       = base `withForeColor` brightBlack
         , styNotice     = base
         , styEmph       = base `withForeColor` brightYellow
         , styWarn       = base `withForeColor` brightRed

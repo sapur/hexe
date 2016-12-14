@@ -28,7 +28,7 @@ import qualified Buffer as Buf
 storeFile = gets cstEditor >>= \ed -> do
     let buf   = edBuffer ed
         fnImg = renderString (edStyle ed) (bufPath buf)
-        msgOK = horizCat [ msgNotice ed "Saved ", fnImg , msgNotice ed "."]
+        msgOK = horizCat [ msgNotice ed "Saved '", fnImg, msgNotice ed "'."]
     let trySave = do
             buf' <- Buf.writeFile buf
             return (buf', msgOK)

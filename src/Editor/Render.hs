@@ -60,14 +60,15 @@ renderLine offset cursor mode pending perLine colMul sty bytes = horizCat
     [ string styOffset (printf "%08X  " offset)
     , horizCat $ zipWith (renderHex cursor mode pending colMul sty)
                          [offset..] bytes
-    , string stySpace (replicate (3*padding) ' ')
+    , string stySpace (replicate hexPadding ' ')
     , string stySpace " "
     , horizCat $ zipWith (renderByte cursor mode pending sty) [offset..] bytes
-    , string stySpace (replicate padding ' ')
+    , string stySpace (replicate missing ' ')
     ]
   where
-    Style{..} = sty
-    padding   = perLine - length bytes
+    Style{..}  = sty
+    missing    = perLine - length bytes
+    hexPadding = 3*missing + (missing + colMul-1) `div` colMul
 
 renderHex cursor mode pending colMul sty offset (b,st,mk)
     = let Style{..} = sty
