@@ -67,6 +67,14 @@ execute cmd = case cmd of
            Bw -> deleteInput (-1)
            Fw -> deleteInput 1
 
+    Slice dir -> case dir of
+        Bw -> slice True
+        Fw -> slice False
+
+    Splice dir -> case dir of
+        Bw -> splice True
+        Fw -> splice False
+
     CommitInput -> commitInput executeScript
 
     CancelInput -> cancelInput

@@ -1,6 +1,7 @@
 module Control.HexEditor (
     setColumnWdtAbs, setColumnWdtRel,
     overwriteHex, overwriteCharKey, deleteByte,
+    slice, splice,
     prepareInsert,
     setMark, setMarkAt, toggleMark, findMark,
     withUndo, undo, redo,
@@ -67,6 +68,27 @@ deleteByte = withUndo (withEditor delete)  where
     delete ed = ed
         { edBuffer = Buf.deleteByte (edCursor ed) (edBuffer ed)
         }
+
+slice rev = withUndo (withEditor int)  where
+    int ed = ed'  where
+        ed'     = setCursor offset'
+                $ ed { edBuffer = buf'
+                     }
+        buf'    = (if rev then fst else snd)
+                $ Buf.splitBuffer (edCursor ed) (edBuffer ed)
+        offset' = if rev then edCursor ed - 1 else 0
+
+splice rev = withUndo (withEditor int)  where
+    int ed = ed'  where
+        cursor    = edCursor ed
+        offset    = Buf.findMark rev cursor (edBuffer ed)
+        (from,to) = if rev then (offset,cursor) else (cursor,offset)
+        buf'      = let (bufX, bufC) = Buf.splitBuffer to (edBuffer ed)
+                        (bufA, bufB) = Buf.splitBuffer from bufX
+                    in  Buf.mergeBuffers bufA bufC
+        ed'       = setCursor from
+                  $ ed { edBuffer = buf'
+                       }
 
 
 setMark b = withEditor $ \ed -> ed

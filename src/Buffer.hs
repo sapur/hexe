@@ -7,6 +7,7 @@ module Buffer (
     setByte, insertByte, deleteByte, insertSlack, removeSlack, extendCond,
     setMark, getMark, findMark,
     isModified,
+    splitBuffer, mergeBuffers,
     readFile, writeFile
 ) where
 
@@ -204,6 +205,21 @@ mergeList [] = []
 
 mergeChunks chunkA chunkB = chunkA
     { chData = chData chunkA `BS.append` chData chunkB
+    }
+
+
+splitBuffer offset buf = (bufL, bufR)  where
+    (chunksL, chunksR) = splitChunksAt offset (bufChunks buf)
+    put chunks buf     = buf { bufChunks = chunks
+                             , bufModified = True
+                             }
+    bufL = put chunksL buf
+    bufR = put chunksR buf
+
+mergeBuffers bufL bufR = Buffer
+    { bufPath     = bufPath bufL  -- TODO: arbitrary choice
+    , bufChunks   = merge (bufChunks bufL) (bufChunks bufR)
+    , bufModified = True
     }
 
 

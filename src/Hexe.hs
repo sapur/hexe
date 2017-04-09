@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-module Main where
+module Hexe (hexeMain) where
 
 import Control.Exception
 import Control.Monad
@@ -23,12 +23,10 @@ import Options
 
 import qualified Buffer as Buf
 
-import Paths_hexe
 
+hexeMain version gdf = run gdf =<< parseOptions version
 
-main = run =<< parseOptions
-
-run opts@Options{..} = action `catch` exception  where
+run getDataFileName opts@Options{..} = action `catch` exception  where
     action = do
         buf <- case optAction of
             Edit file -> do

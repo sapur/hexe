@@ -11,7 +11,7 @@ data History t = History
     , histFuture  :: [t]
     , histEOT     :: Maybe t
     }
-    deriving Show
+    deriving (Eq, Show, Read)
 
 
 emptyHistory = History

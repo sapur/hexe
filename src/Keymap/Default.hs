@@ -48,6 +48,8 @@ hexNav = mkKeymap
 
     , key   KPageUp   ~> [SetScroll $ Page $ Rel (-1)]
     , key   KPageDown ~> [SetScroll $ Page $ Rel 1]
+    , keyC  KPageUp   ~> [SetScroll $ Page $ Rel (-10)]
+    , keyC  KPageDown ~> [SetScroll $ Page $ Rel 10]
     , keyC  KUp       ~> [SetScroll $ Line $ Rel (-1)]
     , keyC  KDown     ~> [SetScroll $ Line $ Rel 1]
 
@@ -74,6 +76,10 @@ hexNav = mkKeymap
 
     , key   KDel      ~> [Delete Fw]
     , char  'x'       ~> [Delete Fw]
+    , char  'S'       ~> [Slice Bw]
+    , char  's'       ~> [Slice Fw]
+    , charA 's'       ~> [Splice Bw]
+    , charA 'S'       ~> [Splice Fw]
 
     , char  'w'       ~> [Store]
     , charC 's'       ~> [Store]

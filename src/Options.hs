@@ -15,7 +15,6 @@ import Options.Applicative
 import qualified Options.Applicative.Help     as Doc
 
 import Data.Version
-import Paths_hexe
 
 
 data Options = Options
@@ -37,8 +36,8 @@ data Action
     deriving (Show, Read)
 
 
-parseOptions = customExecParser prefs
-    $ info (helper <*> infoOptions <*> options)
+parseOptions version = customExecParser prefs
+    $ info (helper <*> infoOptions version <*> options)
     $ fullDesc
    <> header (printf "hexe %s - A Hex Editor " (showVersion version))
    <> footerDoc description
@@ -47,8 +46,8 @@ parseOptions = customExecParser prefs
         { prefDisambiguate = True
         }
 
-infoOptions
-    = infoOption versionText (mconcat
+infoOptions version
+    = infoOption (versionText version) (mconcat
         [ withshort 'V' "version"
         , help "Print version number."
         ])
@@ -143,6 +142,6 @@ description = Doc.unChunk $ Doc.vsepChunks
     ]
 
 
-versionText = intercalate "\n"
+versionText version = intercalate "\n"
     [ printf "hexe %s" (showVersion version)
     ]

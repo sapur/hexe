@@ -56,6 +56,8 @@ renderCommand cmd = case cmd of
                                         (renderPUnit o)
     JumpMark dir     -> catMark? printf "jump to mark %s" (renderDirection dir)
     Delete dir       -> catEdit? printf "delete %s" (renderDirection dir)
+    Slice dir        -> catEdit? printf "slice %s" (renderDirection dir)
+    Splice dir       -> catEdit? printf "splice %s" (renderDirection dir)
     CommitInput      -> catEx  ? "execute command"
     CancelInput      -> catEx  ? "cancel pending command"
     Feed ch          -> catEx  ? printf "type '%c'" ch

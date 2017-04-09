@@ -30,6 +30,8 @@ data Command
     | SetNamedMark (PUnit PValue) String
     | JumpMark Direction
     | Delete Direction
+    | Slice Direction
+    | Splice Direction
     | CommitInput
     | CancelInput
     | Feed Char
