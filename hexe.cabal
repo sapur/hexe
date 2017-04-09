@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                hexe
-version:             0.18.1
+version:             0.18.2
 synopsis:            A TUI hex editor
 author:              Stephan-A. Posselt
 maintainer:          dev-hexe@nimbrium.net
@@ -54,3 +54,25 @@ executable hexe
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -W -O2 -threaded
+
+test-suite hexe-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test, src
+  main-is:             Test.hs
+  build-depends:       base >=4.9 && <4.10,
+                       bytestring >=0.10 && <0.11,
+                       fingertree >=0.1 && <0.2,
+                       vty >=5.5 && <5.15,
+                       optparse-applicative >=0.12 && <0.14,
+                       transformers >=0.5 && <0.6,
+                       extra >=1.4 && <1.6,
+                       mtl >=2.2 && <2.3,
+                       containers >=0.5 && <0.6,
+                       parsec >= 3.0 && <3.2,
+                       directory >= 1.2 && <1.4,
+                       filepath >= 1.4 && <1.5,
+                       ansi-wl-pprint >= 0.6 && <0.7,
+                       hspec,
+                       QuickCheck
+  ghc-options:         -W -O2 -threaded
+  default-language:    Haskell2010

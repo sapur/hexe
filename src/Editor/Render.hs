@@ -48,7 +48,7 @@ render ed = result  where
 
     cursor     = if   isInLine (edMode ed)
                  then NoCursor
-                 else Cursor ccol (length chunks)
+                 else Cursor ccol (length chunks + length padding)
 
     result     = (hexView <-> statusView, cursor)
 
