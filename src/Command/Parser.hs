@@ -62,6 +62,7 @@ command
   <|> name "mark"         *>  (SetNamedMark <$> pUnitValue Char <*> strLit)
   <|> name "jump-mark"    *>  (JumpMark <$> direction)
   <|> name "delete"       *>  (Delete <$> direction)
+  <|> name "slice"        *>  (Slice <$> direction)
   <|> name "commit"       *>= CommitInput
   <|> name "cancel"       *>= CancelInput
   <|> name "feed"         *>  (Feed <$> charLit)

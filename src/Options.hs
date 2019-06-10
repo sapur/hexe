@@ -7,7 +7,6 @@ module Options (
 
 import Data.Char
 import Data.List
-import Data.Monoid
 import Text.Printf
 
 import Options.Applicative

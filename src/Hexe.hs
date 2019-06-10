@@ -26,6 +26,7 @@ import qualified Buffer as Buf
 
 hexeMain version gdf = run gdf =<< parseOptions version
 
+run :: (String -> IO String) -> Options -> IO ()
 run getDataFileName opts@Options{..} = action `catch` exception  where
     action = do
         buf <- case optAction of

@@ -8,7 +8,6 @@ module Keymap.Render (
 import Control.Arrow
 import Data.Function
 import Data.List
-import Data.Ord
 import Text.Printf
 
 import qualified Data.Map as M
@@ -38,7 +37,7 @@ renderKeymapByCategory kms = renderTable table  where
     groupOnFst
         = map (first head . unzip)
         . groupBy ((==) `on` fst)
-        . sortBy (comparing fst)
+        . sortOn fst
     undup
         = map head
         . group
@@ -50,7 +49,7 @@ renderTable table = sections  where
     sections = concatMap renderSection table
     renderSection (name, bindings)
         = unlines $ name : (renderBindings bindings ++ [""])
-    renderBindings = map renderBinding . sortBy (comparing snd)
+    renderBindings = map renderBinding . sortOn snd
     renderBinding (key, cmd0:cmds)
         = intercalate "\n" $      printf "  %-12s %s" key cmd0
                            : map (printf "  %-12s %s" "") cmds

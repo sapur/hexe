@@ -15,7 +15,6 @@ import Prelude hiding (length, concatMap, all, and, or, readFile, writeFile)
 
 import Data.Foldable hiding (length)
 import Data.Maybe
-import Data.Monoid hiding (Alt)
 import Data.Word
 import Debug.Trace
 import Text.Printf
@@ -58,9 +57,11 @@ data Index = Index
     }
 
 
+instance Semigroup Index where
+    Index lA mA <> Index lB mB = Index (lA+lB) (mA || mB)
+
 instance Monoid Index where
     mempty                            = Index 0 False
-    Index lA mA `mappend` Index lB mB = Index (lA+lB) (mA || mB)
 
 instance Measured Index Chunk where
     measure ch = Index (BS.length $ chData ch) (isJust $ chMark ch)
